@@ -1,9 +1,9 @@
-name: Bootstrap full repository
+name: Publish full repository
 
 on:
   push:
     paths:
-      - ".bootstrap/READY"
+      - "z1322-exact-github-ready.zip"
 
 permissions:
   contents: write
@@ -13,26 +13,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Reconstruct and expand prepared repository
+      - name: Verify archive and publish clean tree
         shell: bash
         run: |
           set -euo pipefail
-          marker=".bootstrap/READY"
-          if [[ ! -f "$marker" ]]; then
-            echo "Bootstrap marker is absent; nothing to do."
-            exit 0
-          fi
-          expected="$(cat "$marker")"
-          cat .bootstrap/parts/part-* | base64 --decode > "$RUNNER_TEMP/z1322-exact.zip"
-          actual="$(sha256sum "$RUNNER_TEMP/z1322-exact.zip" | awk '{print $1}')"
+          archive="z1322-exact-github-ready.zip"
+          expected="318cb5c81390aa2168cda91f6b8cd737856c5b8195d89dd438487dcfa7ff8dbd"
+          actual="$(sha256sum "$archive" | awk '{print $1}')"
           test "$actual" = "$expected"
+
           work="$RUNNER_TEMP/z1322-bootstrap"
           mkdir -p "$work"
-          unzip -q "$RUNNER_TEMP/z1322-exact.zip" -d "$work"
-          cp -a "$work/z1322-exact/." .
-          rm -rf .bootstrap
+          unzip -q "$archive" -d "$work"
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan published
+          git rm -rf --cached . >/dev/null 2>&1 || true
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -a "$work/z1322-exact/." .
           git add -A
-          git commit -m "Publish certified proof and manuscript"
-          git push origin HEAD:main
+          git commit -m "Initial certified proof and manuscript"
+          git push --force origin HEAD:main
