@@ -1,0 +1,38 @@
+{
+  "status": "PASS",
+  "profiles": 27,
+  "farkas_certificates": 26,
+  "checked_block_variables": 125983,
+  "balanced_profile": "6^15 7^7",
+  "balanced_lemma": {
+    "candidate_row_counts": [
+      [
+        4,
+        6
+      ],
+      [
+        7,
+        4
+      ],
+      [
+        10,
+        2
+      ],
+      [
+        13,
+        0
+      ]
+    ],
+    "viable": [
+      [
+        7,
+        4
+      ]
+    ],
+    "selected_intersection_totals": [
+      9,
+      10
+    ]
+  },
+  "conclusion": "No 139-one K_3,3-free 13x22 binary matrix exists; Z(13,22,3,3)<=138."
+}

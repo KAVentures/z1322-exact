@@ -1,0 +1,15 @@
+{
+  "problem": "Z(13,22,3,3)",
+  "exact_value": 137,
+  "exact_value_determined": true,
+  "lower_bound": {
+    "value": 137,
+    "certificate": "data/z13_22_137_blocks.json"
+  },
+  "upper_bound": {
+    "value": 137,
+    "claim": "No 13x22 K_3,3-free binary matrix has 138 ones.",
+    "verification": "python3 verify_all.py"
+  },
+  "status": "exact computational proof package; not yet externally peer reviewed"
+}
