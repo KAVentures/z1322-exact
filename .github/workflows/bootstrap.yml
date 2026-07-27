@@ -5,6 +5,10 @@ on:
     paths:
       - "z1322-exact-github-ready*.zip"
       - ".github/workflows/bootstrap.yml"
+  pull_request:
+    paths:
+      - ".github/workflows/bootstrap.yml"
+  workflow_dispatch:
 
 permissions:
   contents: write
