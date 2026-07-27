@@ -1,0 +1,34 @@
+name: Bootstrap full repository
+
+on:
+  push:
+    paths:
+      - ".bootstrap/z1322-exact-github-ready.zip"
+
+permissions:
+  contents: write
+
+jobs:
+  unpack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Expand prepared repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive=".bootstrap/z1322-exact-github-ready.zip"
+          if [[ ! -f "$archive" ]]; then
+            echo "Bootstrap archive is absent; nothing to do."
+            exit 0
+          fi
+          work="$RUNNER_TEMP/z1322-bootstrap"
+          mkdir -p "$work"
+          unzip -q "$archive" -d "$work"
+          cp -a "$work/z1322-exact/." .
+          rm -rf .bootstrap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Publish certified proof and manuscript"
+          git push origin HEAD:main
