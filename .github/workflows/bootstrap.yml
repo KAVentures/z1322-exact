@@ -1,5 +1,6 @@
 name: Publish full repository
 
+# One-time retrigger for exact repository replacement.
 on:
   push:
     paths:
