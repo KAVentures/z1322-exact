@@ -3,10 +3,14 @@ name: Publish full repository
 on:
   push:
     paths:
-      - "z1322-exact-github-ready.zip"
+      - "z1322-exact-github-ready*.zip"
+      - ".github/workflows/bootstrap.yml"
 
 permissions:
   contents: write
+
+env:
+  EXPECTED_SHA256: "318cb5c81390aa2168cda91f6b8cd737856c5b8195d89dd438487dcfa7ff8dbd"
 
 jobs:
   unpack:
@@ -17,14 +21,20 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          archive="z1322-exact-github-ready.zip"
-          expected="318cb5c81390aa2168cda91f6b8cd737856c5b8195d89dd438487dcfa7ff8dbd"
+          mapfile -t archives < <(find . -maxdepth 1 -type f -name 'z1322-exact-github-ready*.zip' -printf '%P\n' | sort)
+          if [[ "${#archives[@]}" -ne 1 ]]; then
+            printf 'Expected exactly one uploaded archive; found %s:\n' "${#archives[@]}"
+            printf '  %s\n' "${archives[@]:-<none>}"
+            exit 1
+          fi
+          archive="${archives[0]}"
           actual="$(sha256sum "$archive" | awk '{print $1}')"
-          test "$actual" = "$expected"
+          test "$actual" = "$EXPECTED_SHA256"
 
           work="$RUNNER_TEMP/z1322-bootstrap"
           mkdir -p "$work"
           unzip -q "$archive" -d "$work"
+          test -d "$work/z1322-exact"
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
