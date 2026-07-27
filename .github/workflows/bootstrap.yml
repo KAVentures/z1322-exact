@@ -3,7 +3,7 @@ name: Bootstrap full repository
 on:
   push:
     paths:
-      - ".bootstrap/z1322-exact-github-ready.zip"
+      - ".bootstrap/READY"
 
 permissions:
   contents: write
@@ -13,18 +13,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Expand prepared repository
+      - name: Reconstruct and expand prepared repository
         shell: bash
         run: |
           set -euo pipefail
-          archive=".bootstrap/z1322-exact-github-ready.zip"
-          if [[ ! -f "$archive" ]]; then
-            echo "Bootstrap archive is absent; nothing to do."
+          marker=".bootstrap/READY"
+          if [[ ! -f "$marker" ]]; then
+            echo "Bootstrap marker is absent; nothing to do."
             exit 0
           fi
+          expected="$(cat "$marker")"
+          cat .bootstrap/parts/part-* | base64 --decode > "$RUNNER_TEMP/z1322-exact.zip"
+          actual="$(sha256sum "$RUNNER_TEMP/z1322-exact.zip" | awk '{print $1}')"
+          test "$actual" = "$expected"
           work="$RUNNER_TEMP/z1322-bootstrap"
           mkdir -p "$work"
-          unzip -q "$archive" -d "$work"
+          unzip -q "$RUNNER_TEMP/z1322-exact.zip" -d "$work"
           cp -a "$work/z1322-exact/." .
           rm -rf .bootstrap
           git config user.name "github-actions[bot]"
