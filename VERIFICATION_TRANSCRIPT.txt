@@ -1,0 +1,106 @@
+cd proof && python3 verify_all.py
+
+=== verify_137.py ===
+PASS: checked 137-one K_3,3-free witness
+
+=== verify_139.py ===
+{
+  "status": "PASS",
+  "profiles": 27,
+  "farkas_certificates": 26,
+  "checked_block_variables": 125983,
+  "balanced_profile": "6^15 7^7",
+  "balanced_lemma": {
+    "candidate_row_counts": [
+      [
+        4,
+        6
+      ],
+      [
+        7,
+        4
+      ],
+      [
+        10,
+        2
+      ],
+      [
+        13,
+        0
+      ]
+    ],
+    "viable": [
+      [
+        7,
+        4
+      ]
+    ],
+    "selected_intersection_totals": [
+      9,
+      10
+    ]
+  },
+  "conclusion": "No 139-one K_3,3-free 13x22 binary matrix exists; Z(13,22,3,3)<=138."
+}
+
+=== verify_138_reduction.py ===
+checked 10
+checked 20
+checked 30
+checked 40
+checked 50
+checked 60
+checked 70
+{
+  "status": "PASS",
+  "profiles_138": 83,
+  "rationally_excluded": 77,
+  "human_excluded": [
+    {
+      "6": 18,
+      "7": 3,
+      "9": 1
+    }
+  ],
+  "checked_block_variables": 390039,
+  "unresolved_profiles": [
+    {
+      "6": 16,
+      "7": 6
+    },
+    {
+      "5": 1,
+      "6": 14,
+      "7": 7
+    },
+    {
+      "5": 2,
+      "6": 12,
+      "7": 8
+    },
+    {
+      "4": 1,
+      "6": 13,
+      "7": 8
+    },
+    {
+      "5": 3,
+      "6": 10,
+      "7": 9
+    }
+  ],
+  "conclusion": "The 138-edge existence question is reduced exactly to five degree profiles."
+}
+
+=== verify_138_full.py ===
+{
+  "status": "PASS",
+  "theorem": "No 13x22 K_3,3-free binary matrix has 138 ones.",
+  "five_profiles_excluded": true,
+  "local_factor_block_variables_checked": 5262392,
+  "screen_instances": 34,
+  "conclusion": "Z(13,22,3,3)=137",
+  "seconds": 17.01654052734375
+}
+
+ALL EXACT-VALUE VERIFICATION GATES PASSED

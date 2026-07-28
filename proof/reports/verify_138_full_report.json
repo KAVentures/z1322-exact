@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "theorem": "No 13x22 K_3,3-free binary matrix has 138 ones.",
+  "five_profiles_excluded": true,
+  "local_factor_block_variables_checked": 5262392,
+  "screen_instances": 34,
+  "conclusion": "Z(13,22,3,3)=137",
+  "seconds": 17.01654052734375
+}
