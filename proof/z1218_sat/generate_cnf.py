@@ -7,8 +7,10 @@ Two exhaustive symmetry branches:
   row8 : some row has degree 8; by row/column symmetry row 0 is exactly
          columns 0..7. The remaining rows have degree at least 8.
 
-Every column has degree at least 5 (otherwise deleting it contradicts
-Z(12,17,3,3) <= 104). All K_{3,3} constraints are explicit.
+Every original column has degree at least 5. In the row8 branch, deleting the
+marked row leaves an extremal 101-edge 11x18 matrix; Z(11,17,3,3)=96 then
+forces every old column to have degree at least 5 as well. All K_{3,3}
+constraints are explicit.
 """
 from __future__ import annotations
 import argparse
@@ -145,7 +147,11 @@ def build(branch:str)->CNF:
         raise ValueError(branch)
     marked=10 if branch=='no8' else 8
     for c in range(C):
-        need=4 if c<marked else 5
+        # In row8, the deleted 11x18 matrix has 101 edges and every one of
+        # its columns has degree at least 101-Z(11,17)=5. In no8, the generic
+        # original-column lower bound gives 4 old incidences for marked
+        # columns and 5 for unmarked columns.
+        need = 5 if branch=='row8' else (4 if c<marked else 5)
         at_least(cnf,[x(r,c) for r in range(1,R)],need)
     add_k33(cnf)
     return cnf
