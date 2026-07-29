@@ -1,0 +1,176 @@
+#!/usr/bin/env python3
+"""Generate proof-oriented SAT instances for the final edge of Z(12,18,3,3).
+
+Two exhaustive symmetry branches:
+  no8  : every row has degree at least 9; hence degrees are 10,9^11.
+         By row/column symmetry row 0 has degree 10 in columns 0..9.
+  row8 : some row has degree 8; by row/column symmetry row 0 is exactly
+         columns 0..7. The remaining rows have degree at least 8.
+
+Every original column has degree at least 5. In the row8 branch, deleting the
+marked row leaves an extremal 101-edge 11x18 matrix; Z(11,17,3,3)=96 then
+forces every old column to have degree at least 5 as well. All K_{3,3}
+constraints are explicit.
+"""
+from __future__ import annotations
+import argparse
+from itertools import combinations
+from pathlib import Path
+
+R, C = 12, 18
+
+class CNF:
+    def __init__(self):
+        self.nvars = R*C
+        self.clauses: list[list[int]] = []
+    def new_var(self) -> int:
+        self.nvars += 1
+        return self.nvars
+    def add(self, *lits: int) -> None:
+        s = set(lits)
+        if any(-z in s for z in s):
+            return
+        self.clauses.append(sorted(s, key=lambda z:(abs(z),z<0)))
+    def unit(self, lit:int)->None:
+        self.add(lit)
+
+def x(r:int,c:int)->int:
+    return 1+r*C+c
+
+def at_most(cnf:CNF, lits:list[int], k:int)->None:
+    """Sinz sequential-counter encoding of sum(lits) <= k."""
+    n=len(lits)
+    if k < 0:
+        cnf.add(); return
+    if k >= n:
+        return
+    if k == 0:
+        for lit in lits: cnf.add(-lit)
+        return
+    if n == 1:
+        cnf.add(-lits[0]); return
+    s=[[cnf.new_var() for _ in range(k)] for _ in range(n-1)]
+    cnf.add(-lits[0], s[0][0])
+    for j in range(1,k):
+        cnf.add(-s[0][j])
+    for i in range(1,n-1):
+        cnf.add(-lits[i], s[i][0])
+        cnf.add(-s[i-1][0], s[i][0])
+        for j in range(1,k):
+            cnf.add(-lits[i], -s[i-1][j-1], s[i][j])
+            cnf.add(-s[i-1][j], s[i][j])
+        cnf.add(-lits[i], -s[i-1][k-1])
+    cnf.add(-lits[-1], -s[n-2][k-1])
+
+def at_least(cnf:CNF,lits:list[int],k:int)->None:
+    at_most(cnf,[-l for l in lits],len(lits)-k)
+
+def exactly(cnf:CNF,lits:list[int],k:int)->None:
+    at_most(cnf,lits,k)
+    at_least(cnf,lits,k)
+
+def equiv(cnf:CNF,q:int,a:int,b:int)->None:
+    cnf.add(-q,-a,b)
+    cnf.add(-q,a,-b)
+    cnf.add(q,-a,-b)
+    cnf.add(q,a,b)
+
+def and2(cnf:CNF,z:int,a:int,b:int)->None:
+    cnf.add(-z,a)
+    cnf.add(-z,b)
+    cnf.add(z,-a,-b)
+
+def lex_ge(cnf:CNF,A:list[int],B:list[int])->None:
+    """Lexicographic A >= B, first position most significant."""
+    assert len(A)==len(B) and A
+    prefix = None
+    for i,(a,b) in enumerate(zip(A,B)):
+        if prefix is None:
+            cnf.add(a,-b)
+        else:
+            cnf.add(-prefix,a,-b)
+        if i==len(A)-1:
+            break
+        q=cnf.new_var()
+        equiv(cnf,q,a,b)
+        if prefix is None:
+            prefix=q
+        else:
+            z=cnf.new_var()
+            and2(cnf,z,prefix,q)
+            prefix=z
+
+def add_k33(cnf:CNF)->None:
+    for rs in combinations(range(R),3):
+        for cs in combinations(range(C),3):
+            cnf.add(*[-x(r,c) for r in rs for c in cs])
+
+def fix_marked_row(cnf:CNF,d:int)->None:
+    for c in range(C):
+        cnf.unit(x(0,c) if c<d else -x(0,c))
+
+def add_column_lex(cnf:CNF,groups:list[range])->None:
+    for group in groups:
+        cols=list(group)
+        for c1,c2 in zip(cols,cols[1:]):
+            lex_ge(cnf,[x(r,c1) for r in range(1,R)],
+                       [x(r,c2) for r in range(1,R)])
+
+def add_selected_pair_capacity(cnf:CNF,d:int)->None:
+    for r,s in combinations(range(1,R),2):
+        ys=[]
+        for c in range(d):
+            y=cnf.new_var()
+            ys.append(y)
+            cnf.add(-y,x(r,c))
+            cnf.add(-y,x(s,c))
+            cnf.add(y,-x(r,c),-x(s,c))
+        at_most(cnf,ys,2)
+
+def build(branch:str)->CNF:
+    cnf=CNF()
+    if branch=='no8':
+        fix_marked_row(cnf,10)
+        for r in range(1,R):
+            exactly(cnf,[x(r,c) for c in range(C)],9)
+        add_column_lex(cnf,[range(0,10),range(10,C)])
+        add_selected_pair_capacity(cnf,10)
+    elif branch=='row8':
+        fix_marked_row(cnf,8)
+        old=[x(r,c) for r in range(1,R) for c in range(C)]
+        exactly(cnf,old,101)
+        for r in range(1,R):
+            at_least(cnf,[x(r,c) for c in range(C)],8)
+        add_column_lex(cnf,[range(0,8),range(8,C)])
+        add_selected_pair_capacity(cnf,8)
+    else:
+        raise ValueError(branch)
+    marked=10 if branch=='no8' else 8
+    for c in range(C):
+        # In row8, the deleted 11x18 matrix has 101 edges and every one of
+        # its columns has degree at least 101-Z(11,17)=5. In no8, the generic
+        # original-column lower bound gives 4 old incidences for marked
+        # columns and 5 for unmarked columns.
+        need = 5 if branch=='row8' else (4 if c<marked else 5)
+        at_least(cnf,[x(r,c) for r in range(1,R)],need)
+    add_k33(cnf)
+    return cnf
+
+def write(cnf:CNF,path:Path,branch:str)->None:
+    with path.open('w') as f:
+        f.write(f'c Z(12,18,3,3) 109-edge exclusion branch {branch}\n')
+        f.write('c primary variables x(r,c)=1+r*18+c for 0<=r<12,0<=c<18\n')
+        f.write(f'p cnf {cnf.nvars} {len(cnf.clauses)}\n')
+        for clause in cnf.clauses:
+            f.write(' '.join(map(str,clause))+' 0\n')
+
+def main()->None:
+    ap=argparse.ArgumentParser()
+    ap.add_argument('--branch',choices=['no8','row8'],required=True)
+    ap.add_argument('--out',type=Path,required=True)
+    args=ap.parse_args()
+    cnf=build(args.branch)
+    write(cnf,args.out,args.branch)
+    print(f'{args.branch}: vars={cnf.nvars} clauses={len(cnf.clauses)} out={args.out}')
+if __name__=='__main__':
+    main()
