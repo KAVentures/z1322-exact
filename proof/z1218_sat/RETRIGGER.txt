@@ -1,0 +1,1 @@
+Strengthened row8 exact-column lower bound; retrigger proof-producing SAT workflow.
