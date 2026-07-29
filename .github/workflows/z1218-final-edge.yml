@@ -1,0 +1,109 @@
+name: Z1218 strengthened final-edge proof SAT
+
+on:
+  pull_request:
+    paths:
+      - "proof/z1218_sat/**"
+      - ".github/workflows/z1218-final-edge.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  encoding-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: |
+          cd proof/z1218_sat
+          python test_cardinality.py
+          python test_lex.py
+          python generate_cnf.py --branch no8 --out no8.cnf
+          python generate_cnf.py --branch row8 --out row8.cnf
+          head -n 3 no8.cnf
+          head -n 3 row8.cnf
+
+  solve-and-certify:
+    needs: encoding-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: [no8, row8]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build pinned CaDiCaL 3.0.1 and DRAT-trim
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch rel-3.0.1 https://github.com/arminbiere/cadical.git "$RUNNER_TEMP/cadical"
+          (cd "$RUNNER_TEMP/cadical" && ./configure && make -j2)
+          git clone --depth 1 --branch v05.22.2023 https://github.com/marijnheule/drat-trim.git "$RUNNER_TEMP/drat-trim"
+          make -C "$RUNNER_TEMP/drat-trim"
+          "$RUNNER_TEMP/cadical/build/cadical" --version
+      - name: Generate CNF
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p results/${{ matrix.branch }}
+          python proof/z1218_sat/generate_cnf.py \
+            --branch "${{ matrix.branch }}" \
+            --out "results/${{ matrix.branch }}/instance.cnf"
+          sha256sum "results/${{ matrix.branch }}/instance.cnf" | tee "results/${{ matrix.branch }}/instance.sha256"
+      - name: Solve with clausal proof tracing
+        id: solve
+        shell: bash
+        run: |
+          set +e
+          dir="results/${{ matrix.branch }}"
+          timeout --signal=TERM --kill-after=60s 19800 \
+            "$RUNNER_TEMP/cadical/build/cadical" \
+            "$dir/instance.cnf" "$dir/proof.drat" \
+            > "$dir/solver.log" 2>&1
+          rc=$?
+          echo "$rc" > "$dir/solver.exit"
+          tail -n 80 "$dir/solver.log" || true
+          if [[ "$rc" == 20 ]]; then
+            echo UNSAT > "$dir/result.txt"
+            exit 0
+          elif [[ "$rc" == 10 ]]; then
+            echo SAT > "$dir/result.txt"
+            python proof/z1218_sat/verify_model.py \
+              --branch "${{ matrix.branch }}" --log "$dir/solver.log" \
+              --out "$dir/witness.csv"
+            exit 0
+          else
+            echo UNKNOWN > "$dir/result.txt"
+            exit 1
+          fi
+      - name: Check DRAT certificate
+        if: success() && steps.solve.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          dir="results/${{ matrix.branch }}"
+          if [[ "$(cat "$dir/result.txt")" == UNSAT ]]; then
+            timeout --signal=TERM --kill-after=60s 19800 \
+              "$RUNNER_TEMP/drat-trim/drat-trim" \
+              "$dir/instance.cnf" "$dir/proof.drat" \
+              | tee "$dir/checker.log"
+            grep -E "s VERIFIED|VERIFIED" "$dir/checker.log"
+            zstd -T0 -19 --rm "$dir/proof.drat"
+            sha256sum "$dir/proof.drat.zst" > "$dir/proof.sha256"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: z1218-strengthened-${{ matrix.branch }}-${{ github.sha }}
+          path: results/${{ matrix.branch }}/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
