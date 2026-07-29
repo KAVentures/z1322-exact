@@ -1,0 +1,98 @@
+name: Z1218 cube discovery
+
+on:
+  pull_request:
+    paths:
+      - "proof/z1218_cube/**"
+      - ".github/workflows/z1218-cube-discovery.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.m.outputs.matrix }}
+    steps:
+      - id: m
+        shell: bash
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          cases=[]
+          for a in range(1,10):
+              cases.append({'branch':'no8','a':a,'b':9-a})
+          for a in range(9):
+              for b in range(11):
+                  if a+b>=8:
+                      cases.append({'branch':'row8','a':a,'b':b})
+          assert len(cases)==72
+          print('matrix='+json.dumps({'include':cases},separators=(',',':')))
+          PY
+
+  solve:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 95
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build pinned CaDiCaL 3.0.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch rel-3.0.1 https://github.com/arminbiere/cadical.git "$RUNNER_TEMP/cadical"
+          (cd "$RUNNER_TEMP/cadical" && ./configure && make -j2)
+          "$RUNNER_TEMP/cadical/build/cadical" --version
+      - name: Generate exhaustive cube
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p result
+          printf '%s %s %s\n' '${{ matrix.branch }}' '${{ matrix.a }}' '${{ matrix.b }}' > result/case.txt
+          python proof/z1218_cube/generate_cube.py \
+            --branch '${{ matrix.branch }}' --a '${{ matrix.a }}' --b '${{ matrix.b }}' \
+            --out result/instance.cnf | tee result/generator.log
+          sha256sum result/instance.cnf > result/instance.sha256
+      - name: Solve cube
+        id: solve
+        shell: bash
+        run: |
+          set +e
+          timeout --signal=TERM --kill-after=30s 5100 \
+            "$RUNNER_TEMP/cadical/build/cadical" result/instance.cnf \
+            > result/solver.log 2>&1
+          rc=$?
+          echo "$rc" > result/solver.exit
+          if [[ "$rc" == 20 ]]; then
+            echo UNSAT > result/result.txt
+            rm -f result/instance.cnf
+            exit 0
+          elif [[ "$rc" == 10 ]]; then
+            echo SAT > result/result.txt
+            python proof/z1218_sat/verify_model.py \
+              --branch '${{ matrix.branch }}' --log result/solver.log --out result/witness.csv \
+              > result/model_check.log 2>&1
+            rm -f result/instance.cnf
+            exit 0
+          else
+            echo UNKNOWN > result/result.txt
+            rm -f result/instance.cnf
+            exit 0
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cube-${{ matrix.branch }}-a${{ matrix.a }}-b${{ matrix.b }}
+          path: result/
+          if-no-files-found: error
+          compression-level: 6
+          retention-days: 7
