@@ -1,0 +1,198 @@
+name: Z1218 cube-and-conquer proof
+
+on:
+  pull_request:
+    paths:
+      - "proof/z1218_sat/run_cube.py"
+      - ".github/workflows/z1218-cubes.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CUBE_BITS: "6"
+
+jobs:
+  encoding-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: |
+          cd proof/z1218_sat
+          python test_cardinality.py
+          python test_lex.py
+          python run_cube.py --branch no8 --cube 0 --bits 6 --out /tmp/no8-cube0.cnf
+          python run_cube.py --branch row8 --cube 63 --bits 6 --out /tmp/row8-cube63.cnf
+          grep '^p cnf ' /tmp/no8-cube0.cnf /tmp/row8-cube63.cnf
+
+  no8-cubes:
+    needs: encoding-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    strategy:
+      fail-fast: false
+      max-parallel: 24
+      matrix:
+        cube: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build pinned solvers
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch rel-3.0.1 https://github.com/arminbiere/cadical.git "$RUNNER_TEMP/cadical"
+          (cd "$RUNNER_TEMP/cadical" && ./configure && make -j2)
+          git clone --depth 1 --branch v05.22.2023 https://github.com/marijnheule/drat-trim.git "$RUNNER_TEMP/drat-trim"
+          make -C "$RUNNER_TEMP/drat-trim"
+      - name: Solve and verify cube
+        shell: bash
+        run: |
+          set -uo pipefail
+          branch=no8
+          cube=${{ matrix.cube }}
+          out="result"
+          mkdir -p "$out"
+          python proof/z1218_sat/run_cube.py --branch "$branch" --cube "$cube" --bits "$CUBE_BITS" --out "$out/instance.cnf"
+          sha256sum "$out/instance.cnf" > "$out/instance.sha256"
+          set +e
+          timeout --signal=TERM --kill-after=30s 2100 "$RUNNER_TEMP/cadical/build/cadical" "$out/instance.cnf" "$out/proof.drat" > "$out/solver.log" 2>&1
+          rc=$?
+          set -e
+          echo "$rc" > "$out/solver.exit"
+          if [[ "$rc" == 20 ]]; then
+            set +e
+            timeout --signal=TERM --kill-after=30s 2100 "$RUNNER_TEMP/drat-trim/drat-trim" "$out/instance.cnf" "$out/proof.drat" > "$out/checker.log" 2>&1
+            crc=$?
+            set -e
+            if [[ "$crc" == 0 ]] && grep -q VERIFIED "$out/checker.log"; then
+              echo "UNSAT_VERIFIED $branch $cube" > "$out/status.txt"
+            else
+              echo "UNSAT_CHECK_FAILED $branch $cube checker_rc=$crc" > "$out/status.txt"
+            fi
+          elif [[ "$rc" == 10 ]]; then
+            python proof/z1218_sat/verify_model.py --branch "$branch" --log "$out/solver.log" --out "$out/witness.csv"
+            echo "SAT_VERIFIED $branch $cube" > "$out/status.txt"
+          else
+            echo "UNKNOWN $branch $cube solver_rc=$rc" > "$out/status.txt"
+          fi
+          tail -n 120 "$out/solver.log" > "$out/solver.tail" || true
+          [[ -f "$out/checker.log" ]] && tail -n 120 "$out/checker.log" > "$out/checker.tail" || true
+          rm -f "$out/proof.drat" "$out/solver.log" "$out/checker.log" "$out/instance.cnf"
+          cat "$out/status.txt"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cube-no8-${{ matrix.cube }}
+          path: result/
+          compression-level: 6
+          retention-days: 7
+
+  row8-cubes:
+    needs: encoding-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    strategy:
+      fail-fast: false
+      max-parallel: 24
+      matrix:
+        cube: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build pinned solvers
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch rel-3.0.1 https://github.com/arminbiere/cadical.git "$RUNNER_TEMP/cadical"
+          (cd "$RUNNER_TEMP/cadical" && ./configure && make -j2)
+          git clone --depth 1 --branch v05.22.2023 https://github.com/marijnheule/drat-trim.git "$RUNNER_TEMP/drat-trim"
+          make -C "$RUNNER_TEMP/drat-trim"
+      - name: Solve and verify cube
+        shell: bash
+        run: |
+          set -uo pipefail
+          branch=row8
+          cube=${{ matrix.cube }}
+          out="result"
+          mkdir -p "$out"
+          python proof/z1218_sat/run_cube.py --branch "$branch" --cube "$cube" --bits "$CUBE_BITS" --out "$out/instance.cnf"
+          sha256sum "$out/instance.cnf" > "$out/instance.sha256"
+          set +e
+          timeout --signal=TERM --kill-after=30s 2100 "$RUNNER_TEMP/cadical/build/cadical" "$out/instance.cnf" "$out/proof.drat" > "$out/solver.log" 2>&1
+          rc=$?
+          set -e
+          echo "$rc" > "$out/solver.exit"
+          if [[ "$rc" == 20 ]]; then
+            set +e
+            timeout --signal=TERM --kill-after=30s 2100 "$RUNNER_TEMP/drat-trim/drat-trim" "$out/instance.cnf" "$out/proof.drat" > "$out/checker.log" 2>&1
+            crc=$?
+            set -e
+            if [[ "$crc" == 0 ]] && grep -q VERIFIED "$out/checker.log"; then
+              echo "UNSAT_VERIFIED $branch $cube" > "$out/status.txt"
+            else
+              echo "UNSAT_CHECK_FAILED $branch $cube checker_rc=$crc" > "$out/status.txt"
+            fi
+          elif [[ "$rc" == 10 ]]; then
+            python proof/z1218_sat/verify_model.py --branch "$branch" --log "$out/solver.log" --out "$out/witness.csv"
+            echo "SAT_VERIFIED $branch $cube" > "$out/status.txt"
+          else
+            echo "UNKNOWN $branch $cube solver_rc=$rc" > "$out/status.txt"
+          fi
+          tail -n 120 "$out/solver.log" > "$out/solver.tail" || true
+          [[ -f "$out/checker.log" ]] && tail -n 120 "$out/checker.log" > "$out/checker.tail" || true
+          rm -f "$out/proof.drat" "$out/solver.log" "$out/checker.log" "$out/instance.cnf"
+          cat "$out/status.txt"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cube-row8-${{ matrix.cube }}
+          path: result/
+          compression-level: 6
+          retention-days: 7
+
+  aggregate:
+    needs: [no8-cubes, row8-cubes]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: cube-*
+          path: all
+      - name: Aggregate statuses
+        shell: bash
+        run: |
+          set -euo pipefail
+          find all -name status.txt -print0 | sort -z | xargs -0 cat | sort > statuses.txt
+          echo "total=$(wc -l < statuses.txt)" | tee summary.txt
+          for s in UNSAT_VERIFIED SAT_VERIFIED UNKNOWN UNSAT_CHECK_FAILED; do
+            n=$(grep -c "^$s " statuses.txt || true)
+            echo "$s=$n" | tee -a summary.txt
+          done
+          cat summary.txt
+          if grep -q '^SAT_VERIFIED ' statuses.txt; then
+            echo FINAL=SAT >> summary.txt
+          elif [[ $(grep -c '^UNSAT_VERIFIED ' statuses.txt || true) -eq 128 ]]; then
+            echo FINAL=UNSAT >> summary.txt
+          else
+            echo FINAL=INCOMPLETE >> summary.txt
+          fi
+          find all -name witness.csv -exec cp {} . \; || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: z1218-cube-summary
+          path: |
+            statuses.txt
+            summary.txt
+            witness.csv
+          if-no-files-found: warn
+          retention-days: 30
