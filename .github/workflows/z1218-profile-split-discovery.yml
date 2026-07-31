@@ -1,0 +1,74 @@
+name: Z1218 profile-split discovery
+
+on:
+  pull_request:
+    paths:
+      - "proof/z1218_split/**"
+      - ".github/workflows/z1218-profile-split-discovery.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  split-discovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build CaDiCaL 3.0.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch rel-3.0.1 https://github.com/arminbiere/cadical.git "$RUNNER_TEMP/cadical"
+          (cd "$RUNNER_TEMP/cadical" && ./configure && make -j2)
+      - name: Solve assigned cases
+        shell: bash
+        run: |
+          set -u
+          shard=${{ matrix.shard }}
+          mkdir -p results
+          printf 'branch\tcase\trc\tseconds\n' > results/status.tsv
+          cad="$RUNNER_TEMP/cadical/build/cadical"
+
+          solve_one () {
+            branch="$1"; caseid="$2"; limit="$3"
+            base="${branch}_${caseid}"
+            if [[ "$branch" == no8 ]]; then
+              python proof/z1218_split/generate_case.py --branch no8 --out "results/$base.cnf" > "results/$base.generator.log"
+            else
+              python proof/z1218_split/generate_case.py --branch row8 --case "$caseid" --out "results/$base.cnf" > "results/$base.generator.log"
+            fi
+            start=$(date +%s)
+            set +e
+            timeout --signal=TERM --kill-after=10s "$limit" "$cad" "results/$base.cnf" > "results/$base.solver.log" 2>&1
+            rc=$?
+            set -e
+            stop=$(date +%s)
+            printf '%s\t%s\t%s\t%s\n' "$branch" "$caseid" "$rc" "$((stop-start))" >> results/status.tsv
+            if [[ "$rc" == 10 ]]; then
+              python proof/z1218_sat/verify_model.py --branch "$branch" --log "results/$base.solver.log" --out "results/$base.witness.csv"
+            fi
+            # Keep logs for SAT/UNKNOWN; discard bulky easy UNSAT CNFs/logs.
+            if [[ "$rc" == 20 ]]; then
+              rm -f "results/$base.cnf" "results/$base.solver.log"
+            fi
+          }
+
+          if [[ "$shard" == 0 ]]; then solve_one no8 0 1800; fi
+          for caseid in $(seq "$shard" 16 154); do solve_one row8 "$caseid" 600; done
+          cat results/status.tsv
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: z1218-split-shard-${{ matrix.shard }}
+          path: results/
+          compression-level: 6
+          retention-days: 30
