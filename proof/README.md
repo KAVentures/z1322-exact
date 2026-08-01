@@ -13,7 +13,7 @@ The lower bound is an explicit checked 137-one matrix. The upper bound is a fini
 Requirements:
 
 - Python 3.9 or later;
-- a C++17 compiler (`g++`);
+- a GCC- or Clang-compatible C++17 compiler (`c++`, `g++`, or `clang++`);
 - no Python third-party packages.
 
 Run:
@@ -22,13 +22,13 @@ Run:
 python3 verify_all.py
 ```
 
+Set `CXX` to choose the compiler, for example `CXX=clang++ python3 verify_all.py`. The gate builds its helper in a temporary directory and does not leave generated binaries in the checkout.
+
 Expected final line:
 
 ```text
 ALL EXACT-VALUE VERIFICATION GATES PASSED
 ```
-
-On the development machine the complete gate took about 32 seconds.
 
 ## What the gate checks
 
@@ -53,6 +53,6 @@ The discovery phase used floating-point LP solvers to locate separators. Solver 
 - `data/z13_22_137_blocks.json` — lower-bound witness;
 - `ADVERSARIAL_AUDIT_FULL.md` — trust boundary and failure-mode audit.
 
-## Epistemic status
+## Scope
 
-The artifact is an internally reproducible exact computer-assisted proof. It has not yet been independently audited, formally verified in a proof assistant, or peer reviewed. Priority and literature claims therefore remain provisional.
+The artifact is an internally reproducible exact computer-assisted proof. Independent implementations, formal verification in a proof assistant, and external peer review are outside the scope of this package.

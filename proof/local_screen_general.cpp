@@ -1,4 +1,12 @@
-#include <bits/stdc++.h>
+#include <algorithm>
+#include <cmath>
+#include <climits>
+#include <functional>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 using namespace std;
 struct T{int w,u,v,e;};
 int S0,W,Acount,Bcount,D,qmax; vector<T> types; vector<vector<pair<T,int>>> dists; long long graphs=0,surv=0; vector<string> outputs;

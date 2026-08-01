@@ -18,12 +18,20 @@ The internal exact-arithmetic verification gate passes. The result has not yet u
 Requirements:
 
 - Python 3.9 or later
-- a C++17 compiler (`g++` or compatible)
+- a GCC- or Clang-compatible C++17 compiler (`c++`, `g++`, or `clang++`)
 
 ```bash
 cd proof
 python3 verify_all.py
 ```
+
+The verifier honors the `CXX` environment variable, for example:
+
+```bash
+CXX=clang++ python3 verify_all.py
+```
+
+It builds the temporary local enumerator in a temporary directory, so verification does not modify the repository tree.
 
 Expected final line:
 
@@ -36,9 +44,10 @@ ALL EXACT-VALUE VERIFICATION GATES PASSED
 A prebuilt PDF is in `paper/main.pdf`. To rebuild it:
 
 ```bash
-cd paper
-latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex
+make paper
 ```
+
+The build uses Tectonic when available and otherwise falls back to latexmk; either provides the standard LaTeX packages used by the manuscript.
 
 ## Repository structure
 

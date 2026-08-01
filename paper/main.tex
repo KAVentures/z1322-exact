@@ -25,7 +25,7 @@
 \title[The exact value of $\Z(13,22,3,3)$]{The Exact Zarankiewicz Number $\Z(13,22,3,3)$}
 \author{Koyar Afrasyab}
 \thanks{Independent researcher. Email: \texttt{koyar@kinvectum.com}.}
-\date{27 July 2026}
+\date{1 August 2026}
 \subjclass[2020]{05C35, 05D99, 68R10, 90C05}
 \keywords{Zarankiewicz number, extremal bipartite graph, forbidden submatrix, computer-assisted proof, Farkas certificate, block design}
 
@@ -42,7 +42,7 @@ The upper bound is a finite, certificate-based computer-assisted proof. Triple c
 \section{Introduction}
 The Zarankiewicz problem asks for the maximum number of edges in a bipartite graph avoiding a specified complete bipartite subgraph. It was posed by Zarankiewicz in 1951 \cite{Zarankiewicz1951} and was placed in its modern extremal form by K\H{o}v\'ari, S\'os and Tur\'an \cite{KST1954}. Although the asymptotic theory is extensive, exact values for moderate finite parameters remain difficult. The difficulty is particularly pronounced for $K_{3,3}$-free graphs: useful counting inequalities leave a small but highly structured set of integer configurations, while direct exhaustive search suffers from severe symmetry and proof-certification costs.
 
-Write $\Z(m,n,s,t)$ for the maximum number of edges in a subgraph of $K_{m,n}$ containing no $K_{s,t}$. Roman's linear-programming framework \cite{Roman1975} and later strengthened relaxations \cite{DaviesGillHorsley2026} provide effective finite upper bounds. SAT-based methods have also been developed for exact finite cases \cite{Tan2022}. On the lower-bound side, Bhan, Nobili and Langer \cite{BhanNobiliLanger2026} recently obtained a $137$-edge construction for the present parameter and reported the interval
+Write $\Z(m,n,s,t)$ for the maximum number of edges in a subgraph of $K_{m,n}$ containing no $K_{s,t}$. Roman's linear-programming framework \cite{Roman1975} and later strengthened relaxations \cite{DaviesGillHorsley2026} provide effective finite upper bounds. SAT-based methods have also been developed for exact finite cases \cite{Tan2022}. On the lower-bound side, Bhan, Nobili and Langer \cite{BhanNobiliLanger2026} recently obtained a $137$-edge construction for the present parameter, while the prior upper bound was $140$ \cite{DaviesGillHorsley2026}. Thus
 \[
   137\le \Z(13,22,3,3)\le140.
 \]
@@ -65,7 +65,7 @@ The proof is computer-assisted but certificate based. It is not a report of a mi
 \item The remaining five profiles are reduced to finite residual block-design problems on twelve points. Exhaustive leave-multigraph enumeration, necessary Gram conditions, and exact Farkas certificates exclude all residual cases.
 \end{enumerate}
 
-The source archive includes an explicit $137$-edge witness, all certificates, the exhaustive enumerator, independent profile enumerators, and a one-command verification gate. The result should nevertheless be regarded as a new computer-assisted proof pending independent reproduction and peer review.
+The accompanying repository includes an explicit $137$-edge witness, all certificates, the exhaustive enumerator, independent profile enumerators, and a one-command verification gate, so the computation can be independently reproduced.
 
 \section{Block formulation and the lower bound}
 Let $X=[13]$. Identify the $j$th column of a binary $13\times22$ matrix with its support $E_j\subseteq X$, and put $d_j=|E_j|$. For each triple $T\in\binom{X}{3}$, define
@@ -360,7 +360,7 @@ From the repository root, run
 cd proof
 python3 verify_all.py
 \end{verbatim}
-The verifier compiles \texttt{local\_screen\_general.cpp} with a C++17 compiler if needed, then performs the following checks:
+The verifier compiles \texttt{local\_screen\_general.cpp} with a GCC- or Clang-compatible C++17 compiler if needed, then performs the following checks:
 \begin{enumerate}[label=\arabic*.]
 \item validates the $137$-one witness over all $286$ row triples;
 \item independently re-enumerates the $83$ possible $138$-edge degree profiles;
@@ -393,15 +393,13 @@ Floating-point linear programming was used during discovery to locate dual vecto
 
 The only symmetry reduction in the integral common-$D=7$ branch constructs all $8{,}640$ group elements explicitly, verifies that each preserves point types and leave multiplicities, and checks orbit coverage of all $285$ labeled systems. Repeated columns remain permitted throughout.
 
-\subsection{Epistemic status}
-The package has passed its internal exact-arithmetic gate and an adversarial audit targeting omitted degree profiles, hidden simplicity assumptions, incomplete leave enumeration, invalid rank or determinant implications, symmetry loss, and numerical tolerance. Independent reproduction, a second implementation of the local enumerator, and expert peer review remain desirable. Accordingly, this manuscript reports a complete reproducible computer-assisted proof, not a peer-reviewed consensus result.
+\subsection{Scope and limitations}
+The proof is computer-assisted: its load-bearing finite enumerations and certificate replays are carried out by the supplied exact-arithmetic programs. The repository records an adversarial audit of omitted profiles, hidden simplicity assumptions, incomplete leave enumeration, invalid rank or determinant implications, symmetry loss, and numerical tolerance. A second implementation of the local enumerator would provide an additional independent check, but no solver status or floating-point tolerance is used as a premise.
 
 \section{Discussion}
 The proof illustrates a useful division of labor for finite extremal problems. A coarse global relaxation disposes of most degree patterns efficiently. The few profiles surviving the relaxation are not random hard instances: they are nearly balanced around the zero-penalty degrees six and seven, and their small unused triple capacity forces strong congruences on marked-row deficits. Passing to the leave of a marked row converts those congruences into a compact residual packing problem whose Gram matrix is almost determined.
 
 The method is potentially reusable. For nearby $K_{3,3}$-free matrix problems, one may seek a supporting line for $d\mapsto\binom d3$, enumerate low-penalty degree profiles, apply global dual separation, and reserve exact leave enumeration for the integrality-only residue. The computational burden is then concentrated in small, transparent certificate families rather than a monolithic SAT or MILP run.
-
-A systematic literature and repository search conducted on 27 July 2026 located the $137$-edge lower bound and the previously recorded upper bound $140$, but no prior exact determination of $\Z(13,22,3,3)$. This priority statement is necessarily provisional and should be rechecked during peer review.
 
 \appendix
 \section{The $137$-edge witness}\label{app:witness}
@@ -441,6 +439,9 @@ The principal artifact files are:
 \item[proof/completion\_certs/] Global completion certificates for the integral branch.
 \item[proof/ADVERSARIAL\_AUDIT\_FULL.md] Recorded failure-mode audit.
 \end{description}
+
+\section*{Acknowledgements}
+The author acknowledges the use of OpenAI GPT 5.6 Sol High in solving the problem and preparing the accompanying verification artifact and manuscript. The author remains responsible for the mathematical content.
 
 \begin{thebibliography}{10}
 

@@ -99,8 +99,7 @@ checked 70
   "five_profiles_excluded": true,
   "local_factor_block_variables_checked": 5262392,
   "screen_instances": 34,
-  "conclusion": "Z(13,22,3,3)=137",
-  "seconds": 17.01654052734375
+  "conclusion": "Z(13,22,3,3)=137"
 }
 
 ALL EXACT-VALUE VERIFICATION GATES PASSED

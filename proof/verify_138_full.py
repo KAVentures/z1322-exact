@@ -3,10 +3,10 @@ from itertools import combinations, permutations, product
 from fractions import Fraction
 from math import comb
 from pathlib import Path
-import subprocess, json, tempfile, os, sys, time
+import subprocess, json, tempfile, os, sys
 
 ROOT=Path(__file__).resolve().parent
-BIN=ROOT/'local_screen_general'
+BIN=Path(os.environ.get('LOCAL_SCREEN_BIN',ROOT/'local_screen_general'))
 CERT=ROOT/'local_certs'
 CCERT=ROOT/'completion_certs'
 PTS=range(13)
@@ -308,10 +308,9 @@ def prove_profiles():
     return checked
 
 if __name__=='__main__':
-    t=time.time();n=prove_profiles()
+    n=prove_profiles()
     report={'status':'PASS','theorem':'No 13x22 K_3,3-free binary matrix has 138 ones.',
             'five_profiles_excluded':True,'local_factor_block_variables_checked':n,
-            'screen_instances':len(screen_cache),'conclusion':'Z(13,22,3,3)=137',
-            'seconds':time.time()-t}
+            'screen_instances':len(screen_cache),'conclusion':'Z(13,22,3,3)=137'}
     (ROOT/'reports/verify_138_full_report.json').write_text(json.dumps(report,indent=2))
     print(json.dumps(report,indent=2))
