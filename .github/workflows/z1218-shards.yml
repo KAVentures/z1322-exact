@@ -1,0 +1,91 @@
+name: Z1218 exhaustive degree shards
+
+on:
+  pull_request:
+    paths:
+      - 'z1218/**'
+      - '.github/workflows/z1218-shards.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide-shard:
+    name: ${{ matrix.branch }}-d${{ matrix.degree }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 16
+      matrix:
+        branch: [no8, row8]
+        degree: [5, 6, 7, 8, 9, 10, 11, 12]
+    defaults:
+      run:
+        working-directory: z1218
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Kissat 4.0.4 and DRAT-trim
+        run: |
+          set -euxo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential zlib1g-dev
+          git clone --depth 1 --branch rel-4.0.4 https://github.com/arminbiere/kissat.git tools/kissat
+          (cd tools/kissat && ./configure && make -j2)
+          git clone --depth 1 https://github.com/marijnheule/drat-trim.git tools/drat-trim
+          (cd tools/drat-trim && make -j2)
+          dir=results/shards/${{ matrix.branch }}-d${{ matrix.degree }}
+          mkdir -p "$dir"
+          {
+            echo "kissat_commit=$(git -C tools/kissat rev-parse HEAD)"
+            echo "drat_trim_commit=$(git -C tools/drat-trim rev-parse HEAD)"
+            tools/kissat/build/kissat --version
+          } | tee "$dir/toolchain.txt"
+      - name: Generate exact shard
+        run: |
+          set -euxo pipefail
+          dir=results/shards/${{ matrix.branch }}-d${{ matrix.degree }}
+          PYTHONPATH=src python3 src/generate_shard.py \
+            --branch ${{ matrix.branch }} --degree ${{ matrix.degree }} \
+            --out "$dir/instance.cnf"
+          sha256sum src/*.py "$dir/instance.cnf" | tee "$dir/INPUT_SHA256.txt"
+          printf 'branch=%s\ncanonical_column_0_degree=%s\ncoverage=degree in {5,6,7,8,9,10,11,12}\n' \
+            '${{ matrix.branch }}' '${{ matrix.degree }}' > "$dir/shard.txt"
+      - name: Solve and verify shard
+        run: |
+          set -euxo pipefail
+          dir=results/shards/${{ matrix.branch }}-d${{ matrix.degree }}
+          set +e
+          timeout --signal=TERM --kill-after=60s 19800 \
+            tools/kissat/build/kissat --no-binary "$dir/instance.cnf" "$dir/proof.drat" \
+            > "$dir/solver.log" 2>&1
+          rc=$?
+          set -e
+          echo "$rc" | tee "$dir/solver.exit"
+          if [[ "$rc" == 20 ]]; then
+            echo UNSAT | tee "$dir/result.txt"
+            tools/drat-trim/drat-trim "$dir/instance.cnf" "$dir/proof.drat" \
+              | tee "$dir/checker.log"
+            grep -E 's VERIFIED|VERIFIED' "$dir/checker.log"
+            sha256sum "$dir/proof.drat" | tee "$dir/proof.sha256"
+            gzip -9 "$dir/proof.drat"
+          elif [[ "$rc" == 10 ]]; then
+            echo SAT | tee "$dir/result.txt"
+            python3 src/verify_model.py --branch ${{ matrix.branch }} \
+              --log "$dir/solver.log" --out "$dir/witness.csv" \
+              | tee "$dir/model_check.log"
+          else
+            echo UNKNOWN | tee "$dir/result.txt"
+            exit 1
+          fi
+          sha256sum "$dir"/* | tee "$dir/FINAL_SHA256.txt"
+      - name: Upload shard certificate
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: z1218-${{ matrix.branch }}-d${{ matrix.degree }}
+          path: z1218/results/shards/${{ matrix.branch }}-d${{ matrix.degree }}
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 90
