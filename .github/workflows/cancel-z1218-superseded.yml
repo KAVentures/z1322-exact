@@ -1,0 +1,29 @@
+name: Cancel superseded Z1218 runs
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/cancel-z1218-superseded.yml'
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  cancel:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Cancel only explicitly superseded runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -x
+          for id in \
+            30729395852 30729395861 \
+            30729474865 30729474873 30729474884 \
+            30729499327 30729499332 30729499337 \
+            30729575103 30729575104 30729575112 30729575129
+          do
+            gh api --method POST "repos/${GITHUB_REPOSITORY}/actions/runs/${id}/cancel" || true
+          done
+          echo 'Preserved exhaustive shard run 30729499386 and double-lex run 30729575118.'
