@@ -425,21 +425,6 @@ The first seventeen blocks have size six and the final five have size seven. The
 \section{Certificate formats}
 Global and completion certificates store rational multipliers as numerator--denominator pairs. Local factorization certificates are multiplied by a common positive denominator and stored as sparse integer vectors. For each certificate, the verifier reconstructs the complete right-hand side, checks that its dual value is strictly negative, regenerates every eligible block, and checks that the corresponding dual coefficient is nonnegative. Thus certificate files are data, not trusted executable code.
 
-\section{File map}
-The principal artifact files are:
-\begin{description}[style=nextline,leftmargin=0pt,labelindent=0pt,font=\normalfont\ttfamily]
-\item[proof/verify\_all.py] Complete verification gate.
-\item[proof/verify\_137.py] Exhaustive lower-witness check.
-\item[proof/enumerate138.py] Independent degree-profile enumeration.
-\item[proof/verify\_138\_reduction.py] Global profile and Farkas replay.
-\item[proof/local\_screen\_general.cpp] Exact point-type and leave-multigraph enumerator.
-\item[proof/verify\_138\_full.py] Local screen, factorization, orbit, and completion replay.
-\item[proof/certs138/] Global profile certificates.
-\item[proof/local\_certs/] Local factorization certificates.
-\item[proof/completion\_certs/] Global completion certificates for the integral branch.
-\item[proof/ADVERSARIAL\_AUDIT\_FULL.md] Recorded failure-mode audit.
-\end{description}
-
 \section*{Acknowledgements}
 The author acknowledges the use of OpenAI GPT 5.6 Sol High in solving the problem and preparing the accompanying verification artifact and manuscript. The author remains responsible for the mathematical content.
 
