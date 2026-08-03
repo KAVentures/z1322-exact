@@ -1,0 +1,102 @@
+name: Z1617 exact 133-edge decision
+
+on:
+  pull_request:
+    paths:
+      - 'z1617/src/**'
+      - '.github/workflows/z1617-exact-133.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  coverage:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Audit exhaustive row-profile partition and encodings
+        run: |
+          cd z1617
+          PYTHONPATH=src python3 src/test_profiles.py
+          PYTHONPATH=src python3 src/test_encoding.py
+          PYTHONPATH=src python3 src/generate_cnf.py --list > row_profiles.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: z1617-row-profile-manifest
+          path: z1617/row_profiles.json
+          retention-days: 90
+
+  decide:
+    needs: coverage
+    name: row-profile-${{ matrix.profile }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 18
+      matrix:
+        profile: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build pinned proof toolchain
+        run: |
+          set -euxo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential zlib1g-dev pigz
+          git clone https://github.com/arminbiere/kissat.git tools/kissat
+          git -C tools/kissat checkout 8af8e56f174b778aef3aa45af9f739b2a5f492c2
+          (cd tools/kissat && ./configure && make -j2)
+          git clone https://github.com/marijnheule/drat-trim.git tools/drat-trim
+          git -C tools/drat-trim checkout 2e3b2dc0ecf938addbd779d42877b6ed69d9a985
+          (cd tools/drat-trim && make -j2)
+      - name: Generate exact shard
+        env:
+          PROFILE: ${{ matrix.profile }}
+        run: |
+          set -euxo pipefail
+          dir=z1617/results/profile-${PROFILE}; mkdir -p "$dir"
+          PYTHONPATH=z1617/src python3 z1617/src/generate_cnf.py --profile-id "$PROFILE" --out "$dir/instance.cnf" --manifest "$dir/profile.json" | tee "$dir/generation.log"
+          PYTHONPATH=z1617/src python3 z1617/src/test_profiles.py | tee "$dir/coverage.log"
+          PYTHONPATH=z1617/src python3 z1617/src/test_encoding.py | tee "$dir/encoding.log"
+          {
+            echo kissat_commit=$(git -C tools/kissat rev-parse HEAD)
+            echo drat_trim_commit=$(git -C tools/drat-trim rev-parse HEAD)
+          } | tee "$dir/toolchain.txt"
+          sha256sum z1617/src/*.py "$dir/instance.cnf" "$dir/profile.json" | tee "$dir/INPUT_SHA256.txt"
+      - name: Solve and independently certify
+        env:
+          PROFILE: ${{ matrix.profile }}
+        run: |
+          set -euxo pipefail
+          dir=z1617/results/profile-${PROFILE}
+          set +e
+          timeout --signal=TERM --kill-after=60s 19800 tools/kissat/build/kissat --no-binary "$dir/instance.cnf" "$dir/proof.drat" > "$dir/solver.log" 2>&1
+          rc=$?
+          set -e
+          echo "$rc" | tee "$dir/solver.exit"
+          if [[ "$rc" == 20 ]]; then
+            echo UNSAT | tee "$dir/result.txt"
+            tools/drat-trim/drat-trim "$dir/instance.cnf" "$dir/proof.drat" | tee "$dir/checker.log"
+            grep -E 's VERIFIED|VERIFIED' "$dir/checker.log"
+            sha256sum "$dir/proof.drat" | tee "$dir/proof.sha256"
+            pigz -9 -p2 "$dir/proof.drat"
+          elif [[ "$rc" == 10 ]]; then
+            echo SAT | tee "$dir/result.txt"
+            python3 z1617/src/verify_model.py --log "$dir/solver.log" --manifest "$dir/profile.json" --out "$dir/witness.csv" | tee "$dir/model_check.log"
+            rm -f "$dir/proof.drat"
+          else
+            echo UNKNOWN | tee "$dir/result.txt"
+            rm -f "$dir/proof.drat"
+            exit 1
+          fi
+          sha256sum "$dir"/* | tee "$dir/FINAL_SHA256.txt"
+      - name: Upload proof or witness
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: z1617-row-profile-${{ matrix.profile }}
+          path: z1617/results/profile-${{ matrix.profile }}
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 90
