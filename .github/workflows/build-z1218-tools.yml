@@ -1,0 +1,40 @@
+name: Build Z1218 proof toolchain
+
+on:
+  push:
+    branches: [z1218-toolchain-build]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build pinned Kissat and DRAT-trim
+        run: |
+          set -euxo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential zlib1g-dev
+          git clone --depth 1 --branch rel-4.0.4 https://github.com/arminbiere/kissat.git kissat
+          (cd kissat && ./configure && make -j2)
+          git clone --depth 1 https://github.com/marijnheule/drat-trim.git drat-trim
+          (cd drat-trim && make -j2)
+          mkdir bundle
+          cp kissat/build/kissat bundle/
+          cp drat-trim/drat-trim bundle/
+          {
+            echo "kissat_commit=$(git -C kissat rev-parse HEAD)"
+            echo "drat_trim_commit=$(git -C drat-trim rev-parse HEAD)"
+            uname -a
+            ldd bundle/kissat
+            ldd bundle/drat-trim
+          } > bundle/toolchain.txt 2>&1
+          sha256sum bundle/kissat bundle/drat-trim bundle/toolchain.txt > bundle/SHA256.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: z1218-linux-x86_64-proof-toolchain
+          path: bundle
+          if-no-files-found: error
+          retention-days: 90
