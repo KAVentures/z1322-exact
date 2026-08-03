@@ -1,0 +1,112 @@
+name: Z1218 corrected exhaustive cell-pair proofs
+
+on:
+  pull_request:
+    paths:
+      - 'z1218/src/generate_cellpair_shard.py'
+      - 'z1218/src/test_cellpair_coverage.py'
+      - '.github/workflows/z1218-correct-cellpair-shards.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  coverage:
+    name: exhaustive-profile-audit
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: z1218
+    steps:
+      - uses: actions/checkout@v4
+      - name: Audit corrected full-range profile partition
+        run: PYTHONPATH=src python3 src/test_cellpair_coverage.py
+      - name: Save deterministic profile manifest
+        run: PYTHONPATH=src python3 src/generate_cellpair_shard.py --list > corrected_profiles.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: z1218-corrected-profile-manifest
+          path: z1218/corrected_profiles.json
+          if-no-files-found: error
+          retention-days: 90
+
+  prove:
+    name: corrected-profile-${{ matrix.profile }}
+    needs: coverage
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        profile: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200]
+    defaults:
+      run:
+        working-directory: z1218
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build pinned solver and checker
+        run: |
+          set -euxo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential zlib1g-dev pigz
+          git clone --depth 1 --branch rel-4.0.4 https://github.com/arminbiere/kissat.git tools/kissat
+          (cd tools/kissat && ./configure && make -j2)
+          git clone --depth 1 https://github.com/marijnheule/drat-trim.git tools/drat-trim
+          (cd tools/drat-trim && make -j2)
+      - name: Generate corrected full-range profile
+        env:
+          PROFILE: ${{ matrix.profile }}
+        run: |
+          set -euxo pipefail
+          dir=results/corrected/profile-${PROFILE}
+          mkdir -p "$dir"
+          PYTHONPATH=src python3 src/generate_cellpair_shard.py \
+            --profile-id "$PROFILE" --out "$dir/instance.cnf" \
+            --manifest "$dir/profile.json" | tee "$dir/generation.log"
+          PYTHONPATH=src python3 src/test_cellpair_coverage.py | tee "$dir/coverage_test.log"
+          {
+            echo "kissat_commit=$(git -C tools/kissat rev-parse HEAD)"
+            echo "drat_trim_commit=$(git -C tools/drat-trim rev-parse HEAD)"
+            echo 'coverage: complete q range max(1,d0+d1-12)..min(d0,d1); 201 profiles cover exactly the seven hard parent shards'
+          } | tee "$dir/toolchain.txt"
+          sha256sum src/*.py "$dir/instance.cnf" "$dir/profile.json" | tee "$dir/INPUT_SHA256.txt"
+      - name: Solve and independently verify profile
+        env:
+          PROFILE: ${{ matrix.profile }}
+        run: |
+          set -euxo pipefail
+          dir=results/corrected/profile-${PROFILE}
+          branch=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["branch"])' "$dir/profile.json")
+          set +e
+          timeout --signal=TERM --kill-after=60s 18000 \
+            tools/kissat/build/kissat --no-binary "$dir/instance.cnf" "$dir/proof.drat" \
+            > "$dir/solver.log" 2>&1
+          rc=$?
+          set -e
+          echo "$rc" | tee "$dir/solver.exit"
+          if [[ "$rc" == 20 ]]; then
+            echo UNSAT | tee "$dir/result.txt"
+            tools/drat-trim/drat-trim "$dir/instance.cnf" "$dir/proof.drat" | tee "$dir/checker.log"
+            grep -E 's VERIFIED|VERIFIED' "$dir/checker.log"
+            sha256sum "$dir/proof.drat" | tee "$dir/proof.sha256"
+            pigz -9 -p2 "$dir/proof.drat"
+          elif [[ "$rc" == 10 ]]; then
+            echo SAT | tee "$dir/result.txt"
+            python3 src/verify_model.py --branch "$branch" --log "$dir/solver.log" --out "$dir/witness.csv" | tee "$dir/model_check.log"
+          else
+            echo UNKNOWN | tee "$dir/result.txt"
+            rm -f "$dir/proof.drat"
+            exit 1
+          fi
+          sha256sum "$dir"/* | tee "$dir/FINAL_SHA256.txt"
+      - name: Upload corrected profile certificate
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: z1218-corrected-profile-${{ matrix.profile }}
+          path: z1218/results/corrected/profile-${{ matrix.profile }}
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 90
