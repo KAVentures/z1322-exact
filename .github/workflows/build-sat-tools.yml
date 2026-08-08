@@ -1,0 +1,43 @@
+name: Build SAT tools artifact
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/build-sat-tools.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build pinned CaDiCaL 3.0.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch rel-3.0.1 https://github.com/arminbiere/cadical.git cadical-src
+          (cd cadical-src && ./configure && make -j2)
+      - name: Build pinned DRAT-trim
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch v05.22.2023 https://github.com/marijnheule/drat-trim.git drat-trim-src
+          make -C drat-trim-src
+      - name: Package binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p sat-tools-linux-x86_64
+          cp cadical-src/build/cadical sat-tools-linux-x86_64/
+          cp drat-trim-src/drat-trim sat-tools-linux-x86_64/
+          chmod +x sat-tools-linux-x86_64/*
+          ./sat-tools-linux-x86_64/cadical --version
+          sha256sum sat-tools-linux-x86_64/* > sat-tools-linux-x86_64/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sat-tools-linux-x86_64
+          path: sat-tools-linux-x86_64/
+          if-no-files-found: error
+          retention-days: 7
