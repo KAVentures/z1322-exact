@@ -1,0 +1,17 @@
+{
+  "date": "2026-08-08",
+  "exact_values": {
+    "Z(13,18,3,3)": 116,
+    "Z(14,17,3,3)": 118,
+    "Z(14,18,3,3)": 124,
+    "Z(15,17,3,3)": 126,
+    "Z(15,18,3,3)": 132
+  },
+  "intervals": {
+    "Z(16,17,3,3)": [132, 133]
+  },
+  "frontier_cells_improved": "recomputed by frontier_propagation.py",
+  "verification": "python3 verify_all.py --verify-dependency",
+  "lower_bounds": "six explicit witnesses bundled under data/",
+  "review_status": "internally exact-replayed; independent peer review pending"
+}

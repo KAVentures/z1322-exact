@@ -6,7 +6,7 @@ from pathlib import Path
 import subprocess, json, tempfile, os, sys
 
 ROOT=Path(__file__).resolve().parent
-BIN=Path(os.environ.get('LOCAL_SCREEN_BIN',ROOT/'local_screen_general'))
+BIN=ROOT/'local_screen_general'
 CERT=ROOT/'local_certs'
 CCERT=ROOT/'completion_certs'
 PTS=range(13)

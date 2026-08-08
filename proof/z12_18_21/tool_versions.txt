@@ -1,0 +1,7 @@
+Preparation environment
+Python: 3.13.5
+Platform: Linux-6.12.13-x86_64-with-glibc2.41
+Verifier dependencies: Python standard library only
+PDF compiler: pdfTeX 1.40.26 (reported by the reference PDF metadata)
+Optional reference-PDF patcher: PyMuPDF 1.26.5
+Preparation date: 2026-08-03

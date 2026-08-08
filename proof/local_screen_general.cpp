@@ -1,7 +1,9 @@
 #include <algorithm>
 #include <cmath>
 #include <climits>
+#include <cstdlib>
 #include <functional>
+#include <initializer_list>
 #include <iostream>
 #include <sstream>
 #include <string>

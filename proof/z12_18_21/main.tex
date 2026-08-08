@@ -1,0 +1,379 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,booktabs,longtable,array,microtype,hyperref,xcolor}
+\hypersetup{colorlinks=true,linkcolor=blue!55!black,citecolor=blue!55!black,urlcolor=blue!55!black}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newcommand{\Z}{Z}
+\title{Three Exact Zarankiewicz Numbers\\\large An Exact Computation-Assisted Proof}
+\author{Koyar Afrasyab\\Independent researcher}
+\date{3 August 2026}
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We determine three finite Zarankiewicz numbers, $Z(12,17;3,3)$, $Z(12,18;3,3)$, and $Z(12,19;3,3)$. Explicit Boolean matrices with 103, 108, and 114 ones supply the lower bounds. The 303 independently replayable orbit certificates for the $12\times17$ deletion bound establish $Z(12,17;3,3)\le103$. The same bound, together with an exact $Z(11,18;3,3)\le101$ family, forces every hypothetical 109-one $12\times18$ matrix into four exhaustive cases, each excluded by an exact symmetry-orbit certificate. Finally, the established $Z(12,18;3,3)=108$ gives the deletion bound $Z(12,19;3,3)\le114$: a hypothetical 115-one matrix has a column of degree at most six, and deleting it leaves at least 109 ones in a forbidden $12\times18$ matrix. A standard-library Python verifier reconstructs every orbit, inequality, rational dual calculation, integer branch, witness scan, and deletion argument using exact arithmetic. It accepts the complete proof chain. Hence
+\[
+\boxed{Z(12,17;3,3)=103,\qquad Z(12,18;3,3)=108,\qquad Z(12,19;3,3)=114}.
+\]
+The complete witnesses, certificates, generators, mutation tests, hashes, and one-command replay package accompany this report. The result has not yet undergone independent peer review.
+\end{abstract}
+
+\section{Introduction}
+For positive integers $m,n,s,t$, the Zarankiewicz number $Z(m,n;s,t)$ is the largest number of edges in a bipartite graph with parts of orders $m$ and $n$ that contains no $K_{s,t}$. In matrix language, $Z(m,n;3,3)$ is the maximum number of ones in an $m\times n$ Boolean matrix with no all-one $3\times3$ submatrix.
+
+The small finite $K_{3,3}$ cases remain a useful benchmark for extremal graph theory and exact computation. Davies, Gill and Horsley developed strengthened linear-programming upper bounds for many small Zarankiewicz parameters~\cite{DGH}. Bhan, Nobili and Langer subsequently reported new lower bounds across the open $3,3$ frontier and closed three cells, including $Z(12,22;3,3)=132$~\cite{BNRL}. Their summary gives $102\leq Z(12,17;3,3)\leq108$ and $108\leq Z(12,18;3,3)\leq113$; the present work closes both gaps.
+
+We write $[v]=\{1,\ldots,v\}$ and identify every column with its support $B_j\subseteq[v]$. A family $(B_1,\ldots,B_n)$ is admissible exactly when
+\begin{equation}
+\lambda_T:=|\{j:T\subseteq B_j\}|\le2
+\qquad\text{for every }T\in\binom{[v]}{3}.
+\label{eq:triplecap}
+\end{equation}
+Repeated blocks are allowed.
+
+\begin{theorem}
+\label{thm:main}
+$Z(12,17;3,3)=103$, $Z(12,18;3,3)=108$, and $Z(12,19;3,3)=114$.
+\end{theorem}
+
+\section{The 103-one construction}
+The matrix recorded in Appendix~\ref{app:witness} has 103 ones in a
+$12\times17$ array. Its row degrees are
+\[
+(9,9,8,8,8,9,9,8,8,8,8,11),
+\]
+and its column degrees are $7,6,6,\ldots,6$. Direct enumeration of the
+$\binom{12}3=220$ row triples gives multiplicity histogram
+\[
+14\text{ triples of multiplicity }0,\qquad
+57\text{ of multiplicity }1,\qquad
+149\text{ of multiplicity }2.
+\]
+Thus the matrix is $K_{3,3}$-free and
+\begin{equation}
+Z(12,17;3,3)\ge103.
+\label{eq:lower1217}
+\end{equation}
+
+\section{The 108-one construction}
+The matrix in Appendix~\ref{app:witness} has 108 ones. Every column has degree six, while the row degrees are
+\[
+(10,9,9,9,9,9,7,9,8,8,10,11).
+\]
+Direct enumeration of the $\binom{12}3=220$ row triples gives multiplicity histogram
+\[
+6\text{ triples of multiplicity }0,\qquad
+68\text{ of multiplicity }1,\qquad
+146\text{ of multiplicity }2.
+\]
+Thus \eqref{eq:triplecap} holds and
+\begin{equation}
+Z(12,18;3,3)\ge108.
+\label{eq:lower}
+\end{equation}
+
+\section{The 114-one construction}
+The matrix in Appendix~\ref{app:witness} has 114 ones in a
+$12\times19$ array. Its row degrees are
+\[
+(8,10,11,9,10,10,8,9,10,9,10,10),
+\]
+and every column has degree six. Direct enumeration of the
+$\binom{12}3=220$ row triples gives multiplicity histogram
+\[
+3\text{ triples of multiplicity }0,\qquad
+54\text{ of multiplicity }1,\qquad
+163\text{ of multiplicity }2.
+\]
+Thus the matrix is $K_{3,3}$-free and
+\begin{equation}
+Z(12,19;3,3)\ge114.
+\label{eq:lower1219}
+\end{equation}
+
+\section{Self-contained deletion bounds}
+The reductions use neighboring upper bounds, all proved inside the package rather than taken as external assumptions.
+
+\subsection{$Z(12,17;3,3)\le103$}
+It is enough to exclude exactly 104 ones, because deleting ones preserves admissibility. Let $c_1\ge\cdots\ge c_{17}$ be the column degrees. Double counting pairs $(T,j)$ with $T\subseteq B_j$ gives
+\begin{equation}
+\sum_{j=1}^{17}\binom{c_j}3\le2\binom{12}3=440.
+\label{eq:z1217cap}
+\end{equation}
+The exact verifier independently enumerates every nonincreasing integer 17-tuple with sum 104 satisfying \eqref{eq:z1217cap}. There are 303. The 303 compressed certificates exclude all of them.
+
+\subsection{$Z(11,18;3,3)\le101$}
+Similarly, a 102-one $11\times18$ matrix would have a nonincreasing degree sequence satisfying
+\[
+\sum_{j=1}^{18}c_j=102,
+\qquad
+\sum_{j=1}^{18}\binom{c_j}3\le2\binom{11}3=330.
+\]
+There are exactly 51 such sequences, and the package contains an accepted certificate for each. Therefore
+\begin{equation}
+Z(11,18;3,3)\le101.
+\label{eq:z1118}
+\end{equation}
+
+\subsection{$Z(12,19;3,3)\le114$}
+Suppose, for contradiction, that an admissible $12\times19$ matrix has
+115 ones. The average column degree is $115/19$, so some column has degree at
+most $\lfloor115/19\rfloor=6$. Deleting that column preserves
+$K_{3,3}$-freeness and leaves at least $115-6=109$ ones in a
+$12\times18$ matrix. This contradicts the already proved upper bound
+$Z(12,18;3,3)\le108$. Hence
+\begin{equation}
+Z(12,19;3,3)\le114.
+\label{eq:z1219}
+\end{equation}
+
+\section{Reduction of 109 ones to four cases}
+Suppose for contradiction that an admissible $12\times18$ matrix has 109 ones.
+
+If a column has degree at most five, deleting that column leaves at least $109-5=104$ ones in a $12\times17$ matrix, contradicting the preceding bound. Hence every column has degree at least six. Their sum is 109, so the multiset is forced:
+\begin{equation}
+7^1 6^{17}.
+\label{eq:colprofile}
+\end{equation}
+
+If a row has degree at most seven, deleting that row leaves at least $109-7=102$ ones in an $11\times18$ matrix, contradicting \eqref{eq:z1118}. Thus every row has degree at least eight.
+
+If a degree-eight row exists, normalize one. The unique degree-seven column either contains it (case A) or avoids it (case B). If no degree-eight row exists, every row has degree at least nine; the row-degree sum 109 then forces
+\begin{equation}
+10^1 9^{11}.
+\label{eq:rowprofile}
+\end{equation}
+The unique degree-seven column either contains the unique degree-ten row (case I) or avoids it (case O). These four cases are exhaustive.
+
+\section{Symmetry-orbit certificates}
+We describe the common exact certificate language.
+
+\subsection{Row cells and block orbits}
+After fixing some blocks, two rows are equivalent when they have the same membership signature in all fixed blocks. Let the resulting cells have sizes $n_1,\ldots,n_s$. The stabilizer of the fixed structure is
+\[
+H=\operatorname{Sym}(n_1)\times\cdots\times\operatorname{Sym}(n_s).
+\]
+An orbit of candidate $k$-blocks is represented by a profile $p=(p_1,\ldots,p_s)$ with $0\le p_i\le n_i$ and $\sum_i p_i=k$. Its size is
+\begin{equation}
+N_p=\prod_i\binom{n_i}{p_i}.
+\end{equation}
+Likewise, a triple orbit is represented by $u=(u_1,\ldots,u_s)$ with $\sum_i u_i=3$ and has size
+\[
+N_u=\prod_i\binom{n_i}{u_i}.
+\]
+A block of profile $p$ contains
+\begin{equation}
+h(u,p)=\prod_i\binom{p_i}{u_i}
+\label{eq:h}
+\end{equation}
+triples of profile $u$.
+
+If fixed blocks already cover every triple in orbit $u$ exactly $\lambda_u$ times, and $x_p$ is the number of remaining blocks selected from orbit $p$, then every completion satisfies
+\begin{equation}
+\sum_p h(u,p)x_p\le(2-\lambda_u)N_u.
+\label{eq:orbitcap}
+\end{equation}
+Exact block-count and multiplicity upper bounds are appended.
+
+\subsection{Marked pair capacities in cases A and B}
+Delete the normalized degree-eight row. The eight columns incident with it are marked. Any pair of the remaining eleven rows can occur in at most two marked blocks; otherwise that pair together with the deleted row lies in three columns. The verifier therefore constructs pair orbits and inequalities parallel to \eqref{eq:orbitcap}. It also imposes aggregate residual-row degree demands.
+
+The residual type counts are:
+\begin{center}
+\begin{tabular}{ccl}
+\toprule
+Case & Fixed block & Remaining block types\\
+\midrule
+A & marked size 6 & 7 marked size 5; 10 unmarked size 6\\
+B & unmarked size 7 & 8 marked size 5; 9 unmarked size 6\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Exact dual leaves}
+At every node the verifier reconstructs an integer system
+\[
+Ax\le b,\qquad l\le x\le u.
+\]
+For any nonnegative rational vector $y$, put $z=x-l$. Then
+\begin{align}
+\mathbf1^Tx
+&=\mathbf1^Tl+y^TAz+\sum_j(1-(A^Ty)_j)z_j\\
+&\le\mathbf1^Tl+y^T(b-Al)
+ +\sum_j(u_j-l_j)\max\{0,1-(A^Ty)_j\}.
+\label{eq:dual}
+\end{align}
+A dual leaf stores $y$ as nonnegative integer numerators over one positive common denominator. Equation \eqref{eq:dual} is evaluated with integers only. If the resulting upper bound is strictly below the required number of remaining columns, the node is closed.
+
+An inner split branches exhaustively on $x_j\le q$ versus $x_j\ge q+1$. An outer split orders candidate $H$-orbits, takes the least occupied orbit, fixes its canonical representative, and forbids all earlier orbits. The forbidden union is $H$-invariant; hence every completion lies in exactly one child. Induction proves exhaustiveness.
+
+\section{Verified certificate totals}
+Table~\ref{tab:stats} records the deterministic counts recomputed by the verifier.
+\begin{table}[h]
+\centering
+\begin{tabular}{lrrrrr}
+\toprule
+Component & Patterns & Outer & Inner & Dual & Integer\\
+\midrule
+$Z(12,17)\le103$ & 303 & 3,607 & 26,725 & 14,651 & 11,764\\
+$Z(11,18)\le101$ & 51 & 160 & 785 & 451 & 320\\
+Case I & 1 & 1 & 1 & 1 & 0\\
+Case O & 1 & 71 & 217 & 139 & 75\\
+Case A & 1 & 77 & 6,290 & 3,077 & 3,109\\
+Case B & 1 & 31 & 2,696 & 1,342 & 1,335\\
+\bottomrule
+\end{tabular}
+\caption{Exact replay totals. ``Dual'' denotes rational dual leaves and ``Integer'' exhaustive integer splits.}
+\label{tab:stats}
+\end{table}
+
+All four final certificates are accepted. Consequently a 109-one matrix does not exist, so $Z(12,18;3,3)\le108$. Together with \eqref{eq:lower}, this proves the second equality in Theorem~\ref{thm:main}; combining the 303 neighboring certificates with \eqref{eq:lower1217} proves the first.
+The deletion argument in the preceding section combines \eqref{eq:lower1219}
+and \eqref{eq:z1219} to prove the third equality.
+
+\section{Reproducibility and trust boundary}
+The trusted base consists of the Python standard library, the standalone verifier, and the hashed witness/certificate files. The verifier does not import the generators and does not call an LP, MILP or SAT solver. It independently regenerates degree patterns, row cells, candidate orbits, capacities and all branch semantics. Rational leaves are checked using Python integers.
+
+The one-command gate checks SHA-256 hashes, replays the proof, compares deterministic report invariants, and runs three adversarial mutation tests. The mutations alter the witness, a rational leaf and bridge metadata; all are rejected.
+
+The included generator scripts used NumPy and SciPy/HiGHS to discover certificates. They are not load-bearing. The result should be regarded as a new computer-assisted proof pending independent reproduction and peer review.
+
+\section*{Acknowledgements}
+OpenAI GPT 5.6 Sol High was used for assistance with exploratory reasoning, implementation, verification and packaging. The author is solely responsible for the mathematical claims and final manuscript. No heuristic solver status is used as a theorem.
+
+\appendix
+\section{The 108-one witness}
+\label{app:witness}
+The rows of the matrix are:
+\[
+\setlength{\arraycolsep}{2.4pt}
+\begin{array}{*{18}{c}}
+0 & 1 & 1 & 0 & 1 & 0 & 1 & 1 & 1 & 0 & 1 & 1 & 0 & 0 & 0 & 1 & 0 & 1\\
+1 & 0 & 1 & 1 & 0 & 0 & 1 & 1 & 1 & 0 & 0 & 1 & 1 & 0 & 1 & 0 & 0 & 0\\
+0 & 1 & 1 & 0 & 0 & 1 & 1 & 0 & 0 & 1 & 1 & 0 & 1 & 0 & 1 & 0 & 0 & 1\\
+0 & 1 & 1 & 1 & 1 & 0 & 0 & 0 & 0 & 1 & 0 & 1 & 0 & 1 & 1 & 1 & 0 & 0\\
+0 & 1 & 0 & 1 & 0 & 1 & 1 & 0 & 1 & 1 & 0 & 0 & 1 & 0 & 0 & 1 & 1 & 0\\
+0 & 1 & 0 & 0 & 1 & 1 & 0 & 1 & 1 & 0 & 1 & 0 & 0 & 1 & 1 & 0 & 1 & 0\\
+1 & 0 & 0 & 0 & 1 & 0 & 1 & 0 & 0 & 1 & 1 & 1 & 0 & 0 & 0 & 0 & 1 & 0\\
+1 & 0 & 1 & 1 & 1 & 1 & 0 & 0 & 1 & 1 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 1\\
+1 & 0 & 1 & 0 & 0 & 1 & 0 & 1 & 0 & 0 & 1 & 0 & 1 & 1 & 0 & 1 & 0 & 0\\
+0 & 1 & 0 & 1 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 1 & 1 & 1 & 0 & 0 & 1 & 1\\
+1 & 0 & 0 & 1 & 1 & 1 & 1 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 1 & 1 & 1\\
+1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1
+\end{array}
+\]
+Equivalently, the column supports are:
+
+\begin{longtable}{r l}
+\toprule
+Column & Support \\
+\midrule
+\endhead
+1 & $\{2,7,8,9,11,12\}$ \\
+2 & $\{1,3,4,5,6,10\}$ \\
+3 & $\{1,2,3,4,8,9\}$ \\
+4 & $\{2,4,5,8,10,11\}$ \\
+5 & $\{1,4,6,7,8,11\}$ \\
+6 & $\{3,5,6,8,9,11\}$ \\
+7 & $\{1,2,3,5,7,11\}$ \\
+8 & $\{1,2,6,9,10,11\}$ \\
+9 & $\{1,2,5,6,8,12\}$ \\
+10 & $\{3,4,5,7,8,12\}$ \\
+11 & $\{1,3,6,7,9,12\}$ \\
+12 & $\{1,2,4,7,10,12\}$ \\
+13 & $\{2,3,5,9,10,12\}$ \\
+14 & $\{4,6,8,9,10,12\}$ \\
+15 & $\{2,3,4,6,11,12\}$ \\
+16 & $\{1,4,5,9,11,12\}$ \\
+17 & $\{5,6,7,10,11,12\}$ \\
+18 & $\{1,3,8,10,11,12\}$ \\
+\bottomrule
+\end{longtable}
+
+\subsection{The 114-one $12\times19$ witness}
+The 19 column supports of the 114-one witness are:
+
+\begin{longtable}{r l}
+\toprule
+Column & Support \\
+\midrule
+\endhead
+1 & $\{2,7,8,9,11,12\}$ \\
+2 & $\{1,3,4,5,6,10\}$ \\
+3 & $\{1,2,3,4,8,9\}$ \\
+4 & $\{2,4,5,8,10,11\}$ \\
+5 & $\{3,4,7,9,10,11\}$ \\
+6 & $\{3,5,6,8,9,11\}$ \\
+7 & $\{1,2,3,5,7,11\}$ \\
+8 & $\{1,2,6,9,10,11\}$ \\
+9 & $\{1,2,5,6,8,12\}$ \\
+10 & $\{3,4,5,7,8,12\}$ \\
+11 & $\{1,3,6,7,9,12\}$ \\
+12 & $\{2,3,6,7,8,10\}$ \\
+13 & $\{2,3,5,9,10,12\}$ \\
+14 & $\{4,6,8,9,10,12\}$ \\
+15 & $\{2,3,4,6,11,12\}$ \\
+16 & $\{1,4,5,9,11,12\}$ \\
+17 & $\{5,6,7,10,11,12\}$ \\
+18 & $\{1,3,8,10,11,12\}$ \\
+19 & $\{2,4,5,6,7,9\}$ \\
+\bottomrule
+\end{longtable}
+
+\subsection{The 103-one $12\times17$ witness}
+For the neighboring exact value, the 17 column supports are:
+
+\begin{longtable}{r l}
+\toprule
+Column & Support \\
+\midrule
+\endhead
+1 & $\{2,7,8,9,11,12\}$ \\
+2 & $\{2,4,5,6,7,10\}$ \\
+3 & $\{1,3,4,5,8,9,10\}$ \\
+4 & $\{1,4,6,7,8,11\}$ \\
+5 & $\{2,3,6,7,8,9\}$ \\
+6 & $\{1,2,3,5,7,11\}$ \\
+7 & $\{1,2,6,9,10,11\}$ \\
+8 & $\{1,2,5,6,8,12\}$ \\
+9 & $\{3,4,5,7,8,12\}$ \\
+10 & $\{1,3,6,7,9,12\}$ \\
+11 & $\{1,2,4,7,10,12\}$ \\
+12 & $\{2,3,5,9,10,12\}$ \\
+13 & $\{4,6,8,9,10,12\}$ \\
+14 & $\{2,3,4,6,11,12\}$ \\
+15 & $\{1,4,5,9,11,12\}$ \\
+16 & $\{5,6,7,10,11,12\}$ \\
+17 & $\{1,3,8,10,11,12\}$ \\
+\bottomrule
+\end{longtable}
+
+\section{Package replay}
+From a clean extraction, run
+\begin{verbatim}
+./verify.sh
+\end{verbatim}
+The verifier writes a fresh report and prints
+\begin{verbatim}
+VERIFIED: Z(12,17,3,3)=103; Z(12,18,3,3)=108; Z(12,19,3,3)=114
+\end{verbatim}
+only after the 303 neighboring $12\times17$ certificates, the 51 neighboring
+$11\times18$ certificates, and all four final cases have been accepted. It
+also independently checks the 103-one, 108-one, and 114-one witnesses and the
+deletion proof from $Z(12,18;3,3)\le108$.
+
+\begin{thebibliography}{9}
+\bibitem{DGH}
+S. Davies, P. Gill and D. Horsley,
+\emph{Improved upper bounds on Zarankiewicz numbers},
+Discrete Mathematics 349(5) (2026), Article 114924.
+DOI: 10.1016/j.disc.2025.114924.
+
+\bibitem{BNRL}
+J. Bhan, N. Nobili and P. Langer,
+\emph{New Bounds for Zarankiewicz Numbers via Reinforced LLM Evolutionary Search},
+arXiv:2605.01120 (2026).
+\end{thebibliography}
+\end{document}

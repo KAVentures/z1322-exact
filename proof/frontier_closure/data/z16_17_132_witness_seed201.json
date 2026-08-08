@@ -1,0 +1,71 @@
+{
+  "m": 16,
+  "n": 17,
+  "edges": 132,
+  "column_masks": [
+    28727,
+    9802,
+    51813,
+    3891,
+    32516,
+    5884,
+    56345,
+    47826,
+    27064,
+    50582,
+    17603,
+    41309,
+    25225,
+    46497,
+    44078,
+    6543,
+    54058
+  ],
+  "row_degrees": [
+    9,
+    9,
+    8,
+    9,
+    8,
+    8,
+    6,
+    8,
+    8,
+    8,
+    9,
+    8,
+    8,
+    9,
+    9,
+    8
+  ],
+  "column_degrees": [
+    8,
+    6,
+    8,
+    8,
+    8,
+    9,
+    8,
+    9,
+    8,
+    8,
+    6,
+    8,
+    6,
+    8,
+    8,
+    8,
+    8
+  ],
+  "triple_multiplicity_histogram": {
+    "0": 54,
+    "1": 112,
+    "2": 394
+  },
+  "provenance": {
+    "method": "degree-preserving stochastic edge-relocation search",
+    "seed": 201,
+    "direct_verification": "verify.py"
+  }
+}

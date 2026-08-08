@@ -1,12 +1,12 @@
 cff-version: 1.2.0
 message: "If you use this work, please cite the manuscript."
-title: "The Exact Zarankiewicz Number Z(13,22,3,3)"
+title: "Exact Zarankiewicz Values on Two Finite Frontier Slices"
 type: article
 authors:
   - family-names: Afrasyab
     given-names: Koyar
     email: koyar@kinvectum.com
-date-released: 2026-07-27
+date-released: 2026-08-08
 version: 1.0.0
 license: CC-BY-4.0
 keywords:

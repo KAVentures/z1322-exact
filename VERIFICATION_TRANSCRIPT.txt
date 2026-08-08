@@ -103,3 +103,36 @@ checked 70
 }
 
 ALL EXACT-VALUE VERIFICATION GATES PASSED
+
+=== z12_18_21/verify_all_exact.py ===
+VERIFIED: Z(12,18,3,3)=108; Z(12,19,3,3)=114; Z(12,20,3,3)=120; Z(12,21,3,3)=126; Z(12,22,3,3)=132
+mutated 108 witness: REJECTED
+mutated 103 witness: REJECTED
+mutated 114 witness: REJECTED
+mutated 120 witness: REJECTED
+mutated 126 witness: REJECTED
+mutated 132 witness: REJECTED
+mutated rational leaf: REJECTED
+mutated bridge metadata: REJECTED
+ALL MUTATION TESTS PASSED
+
+12-BY-18-THROUGH-22 GATE PASSED
+
+cd proof/frontier_closure && ./verify_release.sh
+
+verified 13/13 global Farkas certificates
+verified 12/12 local orbit certificates
+excluded all 19 possible 117-edge column profiles
+verified 6/6 explicit lower-bound witnesses
+VERIFIED: Z(13,18,3,3) = 116
+VERIFIED: Z(14,17,3,3) = 118
+VERIFIED: Z(14,18,3,3) = 124
+VERIFIED: Z(15,17,3,3) = 126
+VERIFIED: Z(15,18,3,3) = 132
+VERIFIED: 132 <= Z(16,17,3,3) <= 133
+ALL MUTATION TESTS PASSED
+improved frontier upper bounds: 24
+RELEASE VERIFICATION PASSED
+
+python3 proof/frontier_closure/verify_all.py --verify-dependency
+VERIFIED: bundled dependency proof replay passed

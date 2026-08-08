@@ -1,0 +1,388 @@
+{
+  "conclusion": "Z(12,17,3,3)=103; Z(12,18,3,3)=108; Z(12,19,3,3)=114; Z(12,20,3,3)=120; Z(12,21,3,3)=126; Z(12,22,3,3)=132",
+  "format": "Z1219-full-verification-v1",
+  "lower_bound_103": {
+    "column_degrees": [
+      6,
+      6,
+      7,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+    ],
+    "ones": 103,
+    "row_degrees": [
+      9,
+      9,
+      8,
+      8,
+      8,
+      9,
+      9,
+      8,
+      8,
+      8,
+      8,
+      11
+    ],
+    "triple_histogram": {
+      "0": 14,
+      "1": 57,
+      "2": 149
+    }
+  },
+  "lower_bound_108": {
+    "column_degrees": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+    ],
+    "ones": 108,
+    "row_degrees": [
+      10,
+      9,
+      9,
+      9,
+      9,
+      9,
+      7,
+      9,
+      8,
+      8,
+      10,
+      11
+    ],
+    "triple_histogram": {
+      "0": 6,
+      "1": 68,
+      "2": 146
+    }
+  },
+  "lower_bound_114": {
+    "column_degrees": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+    ],
+    "ones": 114,
+    "row_degrees": [
+      8,
+      10,
+      11,
+      9,
+      10,
+      10,
+      8,
+      9,
+      10,
+      9,
+      10,
+      10
+    ],
+    "triple_histogram": {
+      "0": 3,
+      "1": 54,
+      "2": 163
+    }
+  },
+  "lower_bound_120": {
+    "column_degrees": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+    ],
+    "ones": 120,
+    "row_degrees": [
+      11,
+      10,
+      10,
+      9,
+      10,
+      10,
+      9,
+      11,
+      9,
+      10,
+      10,
+      11
+    ],
+    "triple_histogram": {
+      "0": 1,
+      "1": 38,
+      "2": 181
+    }
+  },
+  "lower_bound_126": {
+    "column_degrees": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+    ],
+    "ones": 126,
+    "row_degrees": [
+      11,
+      11,
+      10,
+      10,
+      11,
+      11,
+      10,
+      11,
+      10,
+      10,
+      10,
+      11
+    ],
+    "triple_histogram": {
+      "1": 20,
+      "2": 200
+    }
+  },
+  "lower_bound_132": {
+    "column_degrees": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+    ],
+    "ones": 132,
+    "row_degrees": [
+      11,
+      11,
+      11,
+      11,
+      11,
+      11,
+      11,
+      11,
+      11,
+      11,
+      11,
+      11
+    ],
+    "triple_histogram": {
+      "2": 220
+    }
+  },
+  "no8_cases": [
+    {
+      "bytes": 186,
+      "case": "I",
+      "duals": 1,
+      "inner": 1,
+      "outer": 1
+    },
+    {
+      "bytes": 7859,
+      "case": "O",
+      "duals": 139,
+      "inner": 217,
+      "integer_branches": 75,
+      "outer": 71
+    }
+  ],
+  "reduction_logic": {
+    "forced_column_degrees": [
+      7,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+    ],
+    "no8_cases": [
+      "7-column contains degree-10 row",
+      "7-column avoids degree-10 row"
+    ],
+    "no8_row_degrees": [
+      10,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9,
+      9
+    ],
+    "row8_cases": [
+      "7-column incident",
+      "7-column nonincident"
+    ]
+  },
+  "row8_cases": [
+    {
+      "bytes": 304213,
+      "case": "A",
+      "duals": 3077,
+      "inner": 6290,
+      "integer_branches": 3109,
+      "outer": 77
+    },
+    {
+      "bytes": 150679,
+      "case": "B",
+      "duals": 1342,
+      "inner": 2696,
+      "integer_branches": 1335,
+      "outer": 31
+    }
+  ],
+  "wall_seconds": 122.32896065711975,
+  "z1118_upper_101": {
+    "bytes": 37607,
+    "duals": 451,
+    "inner": 785,
+    "integer_branches": 320,
+    "outer": 160,
+    "patterns": 51
+  },
+  "z1217_upper_103": {
+    "bytes": 1826231,
+    "duals": 14651,
+    "inner": 26725,
+    "integer_branches": 11764,
+    "outer": 3607,
+    "patterns": 303
+  },
+  "z1219_to_22_deletion_chain": [
+    {
+      "n": 19,
+      "prior_upper": 108,
+      "upper_bound": 114
+    },
+    {
+      "n": 20,
+      "prior_upper": 114,
+      "upper_bound": 120
+    },
+    {
+      "n": 21,
+      "prior_upper": 120,
+      "upper_bound": 126
+    },
+    {
+      "n": 22,
+      "prior_upper": 126,
+      "upper_bound": 132
+    }
+  ],
+  "z1219_upper_114": {
+    "columns": 19,
+    "contradiction": true,
+    "deleted_column_degree_at_most": 6,
+    "hypothetical_ones": 115,
+    "prior_z1218_upper": 108,
+    "residual_ones_at_least": 109
+  }
+}

@@ -2,9 +2,10 @@
 
 verify:
 	cd proof && python3 verify_all.py
+	cd proof/frontier_closure && python3 verify_all.py && python3 mutation_tests.py && python3 frontier_propagation.py
 
 paper:
-	cd paper && if command -v tectonic >/dev/null 2>&1; then tectonic -o . main.tex; elif command -v latexmk >/dev/null 2>&1; then latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex; else echo 'Need tectonic or latexmk to build the paper' >&2; exit 1; fi
+	cd paper && latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex
 
 clean:
 	cd paper && latexmk -C
