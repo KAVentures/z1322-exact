@@ -1,0 +1,46 @@
+name: hadamard-668-residual-exact
+
+on:
+  push:
+    branches: [hadamard-668-search-20260812]
+    paths:
+      - 'experiments/hadamard668/**'
+      - '.github/workflows/hadamard668-residual.yml'
+
+jobs:
+  residual-cube:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      max-parallel: 16
+      matrix:
+        cube: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install exact SAT solver
+        run: python -m pip install --disable-pip-version-check python-sat
+      - name: Solve complete normalized cube
+        id: solve
+        shell: bash
+        run: |
+          set +e
+          timeout 9m python experiments/hadamard668/residual_sat.py --cube ${{ matrix.cube }} | tee solver_${{ matrix.cube }}.log
+          code=${PIPESTATUS[0]}
+          echo "$code" > runner_status_${{ matrix.cube }}.txt
+          if [ "$code" -eq 124 ]; then echo 'TIMEOUT'; fi
+          if [ -f result_${{ matrix.cube }}.json ]; then cat result_${{ matrix.cube }}.json; fi
+          exit 0
+      - name: Upload cube record
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: residual-cube-${{ matrix.cube }}
+          path: |
+            solver_${{ matrix.cube }}.log
+            runner_status_${{ matrix.cube }}.txt
+            result_${{ matrix.cube }}.json
+          if-no-files-found: warn
