@@ -1,0 +1,43 @@
+name: hadamard-668-tt-exact
+
+on:
+  push:
+    branches: [hadamard-668-search-20260812]
+    paths:
+      - 'experiments/h668_tt_cpsat.py'
+      - '.github/workflows/hadamard668-tt.yml'
+
+jobs:
+  tt-pattern:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      max-parallel: 12
+      matrix:
+        pattern: [0,1,2,3,4,5,6,7,8,9,10,11]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --disable-pip-version-check ortools
+      - name: Solve exact TT pattern
+        shell: bash
+        run: |
+          set +e
+          timeout 9m python experiments/h668_tt_cpsat.py --pattern ${{ matrix.pattern }} | tee tt_${{ matrix.pattern }}.log
+          code=${PIPESTATUS[0]}
+          echo "$code" > tt_runner_status_${{ matrix.pattern }}.txt
+          if [ "$code" -eq 124 ]; then echo 'TIMEOUT'; fi
+          if [ -f tt_result_${{ matrix.pattern }}.json ]; then cat tt_result_${{ matrix.pattern }}.json; fi
+          exit 0
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tt-pattern-${{ matrix.pattern }}
+          path: |
+            tt_${{ matrix.pattern }}.log
+            tt_runner_status_${{ matrix.pattern }}.txt
+            tt_result_${{ matrix.pattern }}.json
+          if-no-files-found: warn
