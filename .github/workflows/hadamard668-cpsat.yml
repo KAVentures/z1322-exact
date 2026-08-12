@@ -1,0 +1,45 @@
+name: hadamard-668-cpsat-exact
+
+on:
+  push:
+    branches: [hadamard-668-search-20260812]
+    paths:
+      - 'experiments/h668_cpsat.py'
+      - '.github/workflows/hadamard668-cpsat.yml'
+
+jobs:
+  cpsat-cube:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      max-parallel: 16
+      matrix:
+        cube: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install OR-Tools
+        run: python -m pip install --disable-pip-version-check ortools
+      - name: Solve exact normalized cube
+        shell: bash
+        run: |
+          set +e
+          timeout 9m python experiments/h668_cpsat.py --cube ${{ matrix.cube }} | tee cpsat_${{ matrix.cube }}.log
+          code=${PIPESTATUS[0]}
+          echo "$code" > cpsat_runner_status_${{ matrix.cube }}.txt
+          if [ "$code" -eq 124 ]; then echo 'TIMEOUT'; fi
+          if [ -f cpsat_result_${{ matrix.cube }}.json ]; then cat cpsat_result_${{ matrix.cube }}.json; fi
+          exit 0
+      - name: Upload CP-SAT cube record
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpsat-cube-${{ matrix.cube }}
+          path: |
+            cpsat_${{ matrix.cube }}.log
+            cpsat_runner_status_${{ matrix.cube }}.txt
+            cpsat_result_${{ matrix.cube }}.json
+          if-no-files-found: warn
