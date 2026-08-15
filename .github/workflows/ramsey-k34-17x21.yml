@@ -1,9 +1,6 @@
-name: Ramsey K3,4 on K17,21
+name: Ramsey K3,4 on K17,21 coarse
 
 on:
-  push:
-    branches:
-      - research/ramsey-k34-17x21
   workflow_dispatch:
 
 jobs:
@@ -17,24 +14,16 @@ jobs:
         r: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     steps:
       - uses: actions/checkout@v4
-
       - name: Build Kissat 4.0.4
         run: |
           git clone --depth 1 --branch rel-4.0.4 https://github.com/arminbiere/kissat.git /tmp/kissat
           cd /tmp/kissat
           ./configure
           make -C build -j2
-          build/kissat --version
-
       - name: Generate exact CNF
         run: |
-          python3 research/ramsey_k34_17x21/generate_cnf.py \
-            --n 21 --r ${{ matrix.r }} --out case.cnf
-          head -1 case.cnf
-          sha256sum case.cnf | tee case.sha256
-
+          python3 research/ramsey_k34_17x21/generate_cnf.py --n 21 --r ${{ matrix.r }} --out case.cnf
       - name: Solve branch
-        id: solve
         shell: bash
         run: |
           set +e
@@ -43,24 +32,15 @@ jobs:
           set -e
           echo "exit_code=$rc" | tee status.txt
           if [ "$rc" -eq 10 ]; then
-            echo "SAT" | tee -a status.txt
-            python3 research/ramsey_k34_17x21/decode_verify.py --n 21 --log solver.log \
-              | tee verified_witness.txt
-          elif [ "$rc" -eq 20 ]; then
-            echo "UNSAT" | tee -a status.txt
-          else
-            echo "UNKNOWN_OR_TIMEOUT" | tee -a status.txt
+            python3 research/ramsey_k34_17x21/decode_verify.py --n 21 --log solver.log | tee verified_witness.txt
           fi
-          tail -80 solver.log || true
-
-      - name: Upload branch result
+      - name: Upload result
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ramsey-k34-17x21-r${{ matrix.r }}
+          name: coarse-r${{ matrix.r }}
           path: |
             solver.log
             status.txt
-            case.sha256
             verified_witness.txt
           if-no-files-found: ignore
