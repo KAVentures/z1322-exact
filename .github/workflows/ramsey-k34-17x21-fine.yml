@@ -39,7 +39,8 @@ jobs:
           echo '63282e5168ca040a2018edfba0726bf893a7a6bcdb1db87feb67857e2da697a7  kissat.zip' | sha256sum -c -
           mkdir -p unpack kissat-bin
           unzip -q kissat.zip -d unpack
-          KISSAT=$(find unpack -type f -name kissat | head -1)
+          find unpack -maxdepth 3 -type f -print
+          KISSAT=$(find unpack -type f | head -1)
           test -n "$KISSAT"
           cp "$KISSAT" kissat-bin/kissat
           chmod +x kissat-bin/kissat
