@@ -1,0 +1,113 @@
+name: Ramsey K3,4 on K17,21 fine
+
+on:
+  push:
+    branches:
+      - research/ramsey-k34-17x21
+    paths:
+      - '.github/workflows/ramsey-k34-17x21-fine.yml'
+      - 'research/ramsey_k34_17x21/**'
+  workflow_dispatch:
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Load exact branch matrix
+        id: matrix
+        shell: bash
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          p='research/ramsey_k34_17x21/branches21.json'
+          b=json.load(open(p))
+          assert len(b)==147
+          print('matrix='+json.dumps({'include':b},separators=(',',':')))
+          PY
+
+      - name: Fetch and verify Kissat 4.0.4
+        shell: bash
+        run: |
+          set -eux
+          curl -L --fail --retry 3 \
+            -o kissat.zip \
+            https://github.com/arminbiere/kissat/releases/download/rel-4.0.4/kissat-4.0.4-linux-amd64.zip
+          echo '63282e5168ca040a2018edfba0726bf893a7a6bcdb1db87feb67857e2da697a7  kissat.zip' | sha256sum -c -
+          mkdir -p unpack kissat-bin
+          unzip -q kissat.zip -d unpack
+          KISSAT=$(find unpack -type f -name kissat | head -1)
+          test -n "$KISSAT"
+          cp "$KISSAT" kissat-bin/kissat
+          chmod +x kissat-bin/kissat
+          kissat-bin/kissat --version
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kissat-4.0.4-linux-amd64
+          path: kissat-bin/kissat
+          retention-days: 1
+
+  solve:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      max-parallel: 24
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    name: r${{ matrix.r }}-s${{ matrix.s }}-a${{ matrix.a }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: kissat-4.0.4-linux-amd64
+          path: kissat-bin
+
+      - name: Generate exact two-row CNF
+        shell: bash
+        run: |
+          chmod +x kissat-bin/kissat
+          python3 research/ramsey_k34_17x21/generate_cnf2.py \
+            --n 21 \
+            --r ${{ matrix.r }} --s ${{ matrix.s }} --a ${{ matrix.a }} \
+            --out case.cnf | tee generation.txt
+          sha256sum case.cnf | tee case.sha256
+          head -1 case.cnf
+
+      - name: Solve exact branch
+        shell: bash
+        run: |
+          set +e
+          timeout 600 kissat-bin/kissat --statistics case.cnf > solver.log 2>&1
+          rc=$?
+          set -e
+          echo "exit_code=$rc" | tee status.txt
+          if [ "$rc" -eq 10 ]; then
+            echo SAT | tee -a status.txt
+            python3 research/ramsey_k34_17x21/decode_verify.py \
+              --n 21 --log solver.log | tee verified_witness.txt
+          elif [ "$rc" -eq 20 ]; then
+            echo UNSAT | tee -a status.txt
+          else
+            echo UNKNOWN_OR_TIMEOUT | tee -a status.txt
+          fi
+          tail -60 solver.log || true
+
+      - name: Upload branch result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fine-r${{ matrix.r }}-s${{ matrix.s }}-a${{ matrix.a }}
+          path: |
+            generation.txt
+            case.sha256
+            status.txt
+            solver.log
+            verified_witness.txt
+          if-no-files-found: ignore
+          retention-days: 3
